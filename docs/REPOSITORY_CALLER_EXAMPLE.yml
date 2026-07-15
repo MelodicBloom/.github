@@ -1,0 +1,26 @@
+name: Web Verification
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  verify:
+    uses: MelodicBloom/.github/.github/workflows/reusable-node-web-verify.yml@automation/control-plane-v1
+    with:
+      node-version: "20"
+      package-manager: npm
+      working-directory: "."
+      lint-command: npm run lint
+      typecheck-command: npm run typecheck
+      test-command: npm test
+      build-command: npm run build
+      artifact-path: .next
+
+# During review, the branch reference above makes the proposed control plane testable.
+# After approval and release, callers should pin a version tag or immutable commit SHA.
+# An empty command means the repository does not claim that verification surface; the
+# reusable workflow reports the absence rather than pretending that a check passed.
