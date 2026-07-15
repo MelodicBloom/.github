@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MelodicBloom/.github/schemas/repository-manifest.schema.json",
+  "title": "MelodicBloom Repository Automation Manifest",
+  "description": "Declares the repository identity, verification surfaces, deployment consequence, and automation authority used by the MelodicBloom control plane.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "repository", "classification", "lifecycle", "verification", "automation"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_name", "owner", "purpose"],
+      "properties": {
+        "full_name": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "owner": {"type": "string", "minLength": 1},
+        "purpose": {"type": "string", "minLength": 20},
+        "canonical_product": {"type": ["string", "null"]}
+      }
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["web-application", "design-system", "agent-runtime", "service", "knowledge-system", "schema-system", "static-experience", "asset-collection", "upstream-reference", "archive", "scaffold"]
+    },
+    "lifecycle": {"type": "string", "enum": ["experimental", "active", "production", "maintenance", "dormant", "archived"]},
+    "stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "runtime": {"type": ["string", "null"]},
+        "framework": {"type": ["string", "null"]},
+        "package_manager": {"type": ["string", "null"], "enum": ["npm", "pnpm", "yarn", "bun", "pip", "uv", "poetry", "none", null]},
+        "working_directory": {"type": "string", "default": "."}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["build", "test", "lint", "typecheck"],
+      "properties": {
+        "build": {"type": "boolean"},
+        "test": {"type": "boolean"},
+        "lint": {"type": "boolean"},
+        "typecheck": {"type": "boolean"},
+        "accessibility": {"type": "boolean", "default": false},
+        "visual_regression": {"type": "boolean", "default": false},
+        "performance": {"type": "boolean", "default": false},
+        "schema_validation": {"type": "boolean", "default": false},
+        "provenance": {"type": "boolean", "default": true}
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean", "default": false},
+        "provider": {"type": ["string", "null"]},
+        "production_requires_approval": {"type": "boolean", "default": true},
+        "deploy_verified_artifact_only": {"const": true}
+      }
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "source_mutation", "cross_repository_write", "agent_access"],
+      "properties": {
+        "mode": {"type": "string", "enum": ["observe", "advise", "enforce", "deployment-gate"]},
+        "source_mutation": {"type": "string", "enum": ["forbidden", "pull-request-only", "dedicated-branch", "approved-direct-write"]},
+        "cross_repository_write": {"type": "boolean"},
+        "agent_access": {"type": "string", "enum": ["none", "read", "propose", "verify", "deploy"]}
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["control", "reason", "owner", "compensating_control", "expires_on"],
+        "properties": {
+          "control": {"type": "string"},
+          "reason": {"type": "string", "minLength": 20},
+          "owner": {"type": "string"},
+          "compensating_control": {"type": "string", "minLength": 10},
+          "expires_on": {"type": "string", "format": "date"}
+        }
+      }
+    }
+  }
+}
