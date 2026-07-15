@@ -1,0 +1,190 @@
+name: Reusable Marketing Proposal Review
+
+on:
+  workflow_call:
+    inputs:
+      proposal-command:
+        description: Command that creates one or more proposal directories under the configured output directory.
+        required: true
+        type: string
+      output-directory:
+        description: Directory containing generated proposal packages.
+        required: false
+        default: marketing-proposals
+        type: string
+      node-version:
+        description: Node.js version used for validation and repository generation commands.
+        required: false
+        default: '20'
+        type: string
+      create-review-issue:
+        description: Open a GitHub review issue after validation. Requires issues write permission in the caller.
+        required: false
+        default: true
+        type: boolean
+      review-assignee:
+        description: Optional GitHub login assigned to the review issue.
+        required: false
+        default: ''
+        type: string
+      schema-ref:
+        description: Versioned MelodicBloom control-plane ref containing the proposal schema.
+        required: false
+        default: automation/control-plane-v1
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  generate-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: marketing-proposals-${{ github.repository }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Record proposal execution context
+        shell: bash
+        run: |
+          mkdir -p .automation-evidence
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "source_revision=${GITHUB_SHA}"
+            echo "workflow_ref=${GITHUB_WORKFLOW_REF}"
+            echo "workflow_sha=${GITHUB_WORKFLOW_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "generated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee .automation-evidence/execution-context.txt
+
+      - name: Run repository proposal generator
+        shell: bash
+        env:
+          PROPOSAL_OUTPUT_DIRECTORY: ${{ inputs.output-directory }}
+          PROPOSAL_SOURCE_REVISION: ${{ github.sha }}
+          PROPOSAL_REPOSITORY: ${{ github.repository }}
+        run: ${{ inputs.proposal-command }}
+
+      - name: Refuse an empty proposal result
+        shell: bash
+        run: |
+          test -d "${{ inputs.output-directory }}" || {
+            echo "Proposal generator did not create ${{ inputs.output-directory }}" >&2
+            exit 1
+          }
+          find "${{ inputs.output-directory }}" -name proposal.json -type f -print -quit | grep -q . || {
+            echo "No proposal.json files were produced" >&2
+            exit 1
+          }
+
+      - name: Retrieve versioned proposal schema
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://raw.githubusercontent.com/MelodicBloom/.github/${{ inputs.schema-ref }}/schemas/marketing-proposal.schema.json" \
+            --output .automation-evidence/marketing-proposal.schema.json
+          sha256sum .automation-evidence/marketing-proposal.schema.json | tee .automation-evidence/schema.sha256
+
+      - name: Validate every proposal contract
+        shell: bash
+        run: |
+          npm install --no-save --ignore-scripts ajv-cli@5 ajv-formats@3
+          failure=0
+          while IFS= read -r -d '' proposal; do
+            echo "Validating ${proposal}"
+            npx ajv validate \
+              --spec=draft2020 \
+              -c ajv-formats \
+              -s .automation-evidence/marketing-proposal.schema.json \
+              -d "${proposal}" || failure=1
+          done < <(find "${{ inputs.output-directory }}" -name proposal.json -type f -print0)
+          exit "${failure}"
+
+      - name: Verify review-package completeness
+        shell: bash
+        run: |
+          failure=0
+          while IFS= read -r -d '' proposal; do
+            directory=$(dirname "${proposal}")
+            for required in proposal.md mockup-spec.md event-map.json experiment.md; do
+              if [ ! -s "${directory}/${required}" ]; then
+                echo "Missing or empty ${directory}/${required}" >&2
+                failure=1
+              fi
+            done
+          done < <(find "${{ inputs.output-directory }}" -name proposal.json -type f -print0)
+          exit "${failure}"
+
+      - name: Create proposal index
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const root = process.env.ROOT;
+          const proposals = [];
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+              const target = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(target);
+              if (entry.isFile() && entry.name === 'proposal.json') {
+                const data = JSON.parse(fs.readFileSync(target, 'utf8'));
+                proposals.push({
+                  proposal_id: data.proposal_id,
+                  name: data.concept.name,
+                  summary: data.concept.summary,
+                  conversion_event: data.concept.conversion_event,
+                  confidence: data.evidence.confidence,
+                  path: path.dirname(target)
+                });
+              }
+            }
+          }
+          walk(root);
+          fs.writeFileSync('.automation-evidence/proposal-index.json', JSON.stringify({proposals}, null, 2));
+          const markdown = proposals.map((p, index) =>
+            `### ${index + 1}. ${p.name}\n\n${p.summary}\n\nConversion event: \`${p.conversion_event}\`  \nConfidence: \`${p.confidence}\`  \nPackage: \`${p.path}\``
+          ).join('\n\n');
+          fs.writeFileSync('.automation-evidence/review-issue.md', `## Marketing interaction proposals\n\nGenerated from \`${process.env.GITHUB_REPOSITORY}@${process.env.GITHUB_SHA}\`. These are review hypotheses, not authorized implementations. Download the workflow artifact for complete rationale, scope, mockup specifications, event maps, experiment contracts, privacy analysis, and visual assets.\n\n${markdown}\n\n## Decision boundary\n\nApproval of an idea does not authorize production deployment, data collection, provider integration, or agent access to customer information. Accepted concepts move to a separate implementation pull request.\n`);
+          NODE
+        env:
+          ROOT: ${{ inputs.output-directory }}
+
+      - name: Upload complete review package
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-proposals-${{ github.run_id }}
+          path: |
+            ${{ inputs.output-directory }}/
+            .automation-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Open review issue
+        if: ${{ inputs.create-review-issue }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSIGNEE: ${{ inputs.review-assignee }}
+        run: |
+          title="Review marketing interaction proposals for ${GITHUB_REPOSITORY#*/}"
+          if [ -n "${ASSIGNEE}" ]; then
+            gh issue create --title "${title}" --body-file .automation-evidence/review-issue.md --assignee "${ASSIGNEE}"
+          else
+            gh issue create --title "${title}" --body-file .automation-evidence/review-issue.md
+          fi
+
+      - name: Publish workflow summary
+        shell: bash
+        run: cat .automation-evidence/review-issue.md >> "${GITHUB_STEP_SUMMARY}"
