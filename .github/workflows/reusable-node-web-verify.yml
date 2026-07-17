@@ -1,0 +1,151 @@
+name: Reusable Node Web Verification
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version used by the repository contract.
+        required: false
+        type: string
+        default: "20"
+      package-manager:
+        description: Frozen package manager used by the repository.
+        required: false
+        type: string
+        default: npm
+      working-directory:
+        description: Directory containing the web project.
+        required: false
+        type: string
+        default: "."
+      lint-command:
+        description: Explicit lint command; empty means the surface is not claimed.
+        required: false
+        type: string
+        default: ""
+      typecheck-command:
+        description: Explicit typecheck command; empty means the surface is not claimed.
+        required: false
+        type: string
+        default: ""
+      test-command:
+        description: Explicit test command; empty means the surface is reported as absent.
+        required: false
+        type: string
+        default: ""
+      build-command:
+        description: Explicit production build command.
+        required: true
+        type: string
+      artifact-path:
+        description: Built output retained as verification evidence.
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-web-verify-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+        shell: bash
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.package-manager }}
+          cache-dependency-path: |
+            ${{ inputs.working-directory }}/package-lock.json
+            ${{ inputs.working-directory }}/pnpm-lock.yaml
+            ${{ inputs.working-directory }}/yarn.lock
+
+      - name: Verify package-manager contract
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            npm) test -f package-lock.json ;;
+            pnpm) test -f pnpm-lock.yaml ;;
+            yarn) test -f yarn.lock ;;
+            *) echo "Unsupported package manager: $PACKAGE_MANAGER" >&2; exit 2 ;;
+          esac
+
+      - name: Install frozen dependencies
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            npm) npm ci ;;
+            pnpm) corepack enable && pnpm install --frozen-lockfile ;;
+            yarn) corepack enable && yarn install --immutable ;;
+          esac
+
+      - name: Record verification identity
+        run: |
+          set -euo pipefail
+          {
+            echo "## Verification identity"
+            echo ""
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Source commit: $GITHUB_SHA"
+            echo "Workflow: $GITHUB_WORKFLOW"
+            echo "Run: $GITHUB_RUN_ID"
+            echo "Node: $(node --version)"
+            echo "Package manager: ${{ inputs.package-manager }}"
+            if [ -f package-lock.json ]; then sha256sum package-lock.json; fi
+            if [ -f pnpm-lock.yaml ]; then sha256sum pnpm-lock.yaml; fi
+            if [ -f yarn.lock ]; then sha256sum yarn.lock; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Lint
+        if: ${{ inputs.lint-command != '' }}
+        run: ${{ inputs.lint-command }}
+
+      - name: Typecheck
+        if: ${{ inputs.typecheck-command != '' }}
+        run: ${{ inputs.typecheck-command }}
+
+      - name: Test
+        if: ${{ inputs.test-command != '' }}
+        run: ${{ inputs.test-command }}
+
+      - name: Report absent test surface
+        if: ${{ inputs.test-command == '' }}
+        run: |
+          echo "Tests were not claimed by the caller; this run does not represent tests as passing." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build production artifact
+        run: ${{ inputs.build-command }}
+
+      - name: Record artifact digest
+        if: ${{ inputs.artifact-path != '' }}
+        run: |
+          set -euo pipefail
+          test -e "${{ inputs.artifact-path }}"
+          tar -cf "$RUNNER_TEMP/verified-artifact.tar" "${{ inputs.artifact-path }}"
+          sha256sum "$RUNNER_TEMP/verified-artifact.tar" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain verified artifact
+        if: ${{ inputs.artifact-path != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-web-artifact-${{ github.sha }}
+          path: ${{ runner.temp }}/verified-artifact.tar
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,20 @@
+name: Marketing Proposal Review
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 14 1,15 * *'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  propose:
+    uses: MelodicBloom/.github/.github/workflows/reusable-marketing-proposal-review.yml@v1
+    with:
+      proposal-command: npm ci && npm run propose:marketing
+      output-directory: marketing-proposals
+      create-review-issue: true
+      review-assignee: qt314wink
+      schema-ref: v1

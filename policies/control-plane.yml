@@ -1,0 +1,48 @@
+version: 1
+
+principles:
+  default_permissions: none
+  immutable_workflow_references: required
+  frozen_dependency_installation: required
+  verified_artifact_promotion: required
+  direct_default_branch_mutation: prohibited
+  exception_expiry: required
+
+promotion:
+  stages:
+    - observe
+    - advise
+    - enforce
+    - deployment-gate
+  canary_required: true
+  rollback_by_version_pin: true
+
+agent_runtime:
+  default_capability: read
+  source_change_mode: pull-request-only
+  production_deploy_requires_human_approval: true
+  database_migration_requires_separate_approval: true
+  workflow_permission_escalation_requires_separate_approval: true
+  secret_mutation: prohibited
+  branch_protection_mutation: prohibited
+  cross_repository_write: prohibited
+
+workflow_limits:
+  default_timeout_minutes: 20
+  artifact_retention_days: 14
+  cancel_superseded_pull_request_runs: true
+  cancel_production_runs: false
+
+required_evidence:
+  - repository
+  - source_commit
+  - workflow_reference
+  - runner_environment
+  - toolchain_versions
+  - lockfile_digest
+  - executed_commands
+  - verification_summary
+  - artifact_digest
+  - permission_declaration
+  - exception_references
+  - transition_decision
