@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MelodicBloom/.github/schemas/repository-verification-profile.schema.json",
+  "title": "MelodicBloom Repository Verification Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "repository", "classification", "runtime", "commands", "surfaces", "promotion", "evidence"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archetype", "maturity", "criticality"],
+      "properties": {
+        "archetype": { "enum": ["web-application", "webgl-application", "visual-library", "compiler-system", "knowledge-system", "automation-control-plane"] },
+        "maturity": { "enum": ["experimental", "candidate", "production"] },
+        "criticality": { "enum": ["low", "moderate", "high"] }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "package_manager", "lockfile"],
+      "properties": {
+        "node": { "type": "string", "minLength": 1 },
+        "package_manager": { "enum": ["npm", "pnpm", "yarn"] },
+        "lockfile": { "type": "string", "minLength": 1 }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] },
+      "required": ["build"]
+    },
+    "surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["static", "behavioral", "visual", "accessibility", "performance", "deployment"],
+      "properties": {
+        "static": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "behavioral": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "visual": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "accessibility": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "performance": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "deployment": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "required_gates", "human_approval"],
+      "properties": {
+        "mode": { "enum": ["observe", "enforce"] },
+        "required_gates": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+        "human_approval": { "type": "boolean" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retention_days", "artifact_paths", "known_omissions"],
+      "properties": {
+        "retention_days": { "type": "integer", "minimum": 1, "maximum": 90 },
+        "artifact_paths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "known_omissions": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    }
+  }
+}
