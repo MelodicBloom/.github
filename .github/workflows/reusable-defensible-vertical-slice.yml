@@ -1,0 +1,135 @@
+name: Reusable Defensible Vertical Slice
+
+on:
+  workflow_call:
+    inputs:
+      node-version: { required: false, type: string, default: "20" }
+      package-manager: { required: false, type: string, default: "npm" }
+      profile-path: { required: false, type: string, default: ".melodicbloom/verification-profile.json" }
+      lint-command: { required: false, type: string, default: "" }
+      typecheck-command: { required: false, type: string, default: "" }
+      test-command: { required: false, type: string, default: "" }
+      build-command: { required: true, type: string }
+      specialized-command: { required: false, type: string, default: "" }
+      artifact-path: { required: false, type: string, default: "" }
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: vertical-slice / verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.package-manager }}
+
+      - name: Require declared repository profile
+        run: test -s "${{ inputs.profile-path }}"
+
+      - name: Validate profile shape and repository identity
+        env:
+          PROFILE: ${{ inputs.profile-path }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync(process.env.PROFILE, 'utf8'));
+          const required = ['schema_version','repository','classification','runtime','commands','surfaces','promotion','evidence'];
+          const missing = required.filter(k => !(k in p));
+          if (missing.length) throw new Error(`Missing profile keys: ${missing.join(', ')}`);
+          if (p.schema_version !== 1) throw new Error('Unsupported profile schema_version');
+          if (p.repository !== process.env.GITHUB_REPOSITORY) throw new Error(`Profile repository ${p.repository} does not match ${process.env.GITHUB_REPOSITORY}`);
+          if (!Array.isArray(p.promotion.required_gates) || !p.promotion.required_gates.length) throw new Error('At least one promotion gate is required');
+          console.log(JSON.stringify(p, null, 2));
+          NODE
+
+      - name: Require frozen dependency contract
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            npm) test -f package-lock.json ;;
+            pnpm) test -f pnpm-lock.yaml ;;
+            yarn) test -f yarn.lock ;;
+            *) echo "Unsupported package manager: $PACKAGE_MANAGER" >&2; exit 2 ;;
+          esac
+
+      - name: Install frozen dependencies
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            npm) npm ci ;;
+            pnpm) corepack enable && pnpm install --frozen-lockfile ;;
+            yarn) corepack enable && yarn install --immutable ;;
+          esac
+
+      - name: Lint
+        if: ${{ inputs.lint-command != '' }}
+        run: ${{ inputs.lint-command }}
+
+      - name: Typecheck
+        if: ${{ inputs.typecheck-command != '' }}
+        run: ${{ inputs.typecheck-command }}
+
+      - name: Tests
+        if: ${{ inputs.test-command != '' }}
+        run: ${{ inputs.test-command }}
+
+      - name: Report undeclared automated tests
+        if: ${{ inputs.test-command == '' }}
+        run: echo 'Automated test command not declared; tests are NOT represented as passed.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Production build
+        run: ${{ inputs.build-command }}
+
+      - name: Repository-specific QA
+        if: ${{ inputs.specialized-command != '' }}
+        run: ${{ inputs.specialized-command }}
+
+      - name: Produce verification receipt
+        env:
+          PROFILE: ${{ inputs.profile-path }}
+        run: |
+          mkdir -p .automation-evidence
+          node <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const profileBytes = fs.readFileSync(process.env.PROFILE);
+          const receipt = {
+            schema_version: 1,
+            repository: process.env.GITHUB_REPOSITORY,
+            source_sha: process.env.GITHUB_SHA,
+            workflow_ref: process.env.GITHUB_WORKFLOW_REF,
+            run_id: process.env.GITHUB_RUN_ID,
+            run_attempt: process.env.GITHUB_RUN_ATTEMPT,
+            node: process.version,
+            profile_sha256: crypto.createHash('sha256').update(profileBytes).digest('hex'),
+            generated_at: new Date().toISOString(),
+            interpretation: 'A successful receipt proves only the declared automated surfaces. Known omissions remain unresolved until separately evidenced.'
+          };
+          fs.writeFileSync('.automation-evidence/verification-receipt.json', JSON.stringify(receipt, null, 2));
+          NODE
+          cat .automation-evidence/verification-receipt.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Digest built artifact
+        if: ${{ inputs.artifact-path != '' }}
+        run: |
+          test -e "${{ inputs.artifact-path }}"
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -cf .automation-evidence/verified-artifact.tar "${{ inputs.artifact-path }}"
+          sha256sum .automation-evidence/verified-artifact.tar | tee .automation-evidence/verified-artifact.sha256
+
+      - name: Retain evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: defensible-verification-${{ github.repository_id }}-${{ github.sha }}
+          path: .automation-evidence/
+          if-no-files-found: error
+          retention-days: 30
