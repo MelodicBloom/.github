@@ -1,0 +1,106 @@
+name: Intelligence signal
+description: Record and route one external signal without authorizing implementation.
+title: "[signal] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form records one briefing or research signal. Submission does not authorize code changes, dependency updates, deployment, or merge.
+
+  - type: input
+    id: signal_id
+    attributes:
+      label: Signal ID
+      description: Use `SIG-YYYY-MM-DD-NNN`.
+      placeholder: SIG-2026-07-18-001
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Primary source
+      description: Provide the source citation or URL and publication date.
+    validations:
+      required: true
+
+  - type: textarea
+    id: finding
+    attributes:
+      label: Finding
+      description: State what changed without adding unsupported conclusions.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: evidence_quality
+    attributes:
+      label: Evidence quality
+      options:
+        - high
+        - medium
+        - low
+        - unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: disposition
+    attributes:
+      label: Proposed disposition
+      options:
+        - watch
+        - research_hypothesis
+        - architecture_candidate
+        - implementation_candidate
+        - opportunity
+        - reject_duplicate
+        - reject_low_evidence
+        - archive_context
+        - needs_human_routing
+    validations:
+      required: true
+
+  - type: input
+    id: canonical_owner
+    attributes:
+      label: Canonical owner candidate
+      description: One repository or `needs_human_routing`.
+      placeholder: MelodicBloom/.github
+    validations:
+      required: true
+
+  - type: textarea
+    id: duplicate_conflicts
+    attributes:
+      label: Duplicate or conflict references
+      description: Link existing issues, schemas, ADRs, or repositories that overlap or disagree.
+
+  - type: textarea
+    id: proposed_action
+    attributes:
+      label: Proposed bounded action
+      description: Prefer a research, documentation, schema, or narrowly scoped implementation action.
+    validations:
+      required: true
+
+  - type: textarea
+    id: execution_scope
+    attributes:
+      label: Execution envelope
+      description: For implementation candidates only, include repository, base branch, proposed branch, allowed paths, forbidden paths, commands, evidence, and rollback.
+
+  - type: checkboxes
+    id: safeguards
+    attributes:
+      label: Safeguards
+      options:
+        - label: This issue does not authorize direct edits to a default branch.
+          required: true
+        - label: Any implementation must use a separate branch and draft PR.
+          required: true
+        - label: Unrelated files and dependency upgrades are forbidden unless explicitly approved.
+          required: true
+        - label: Jennipher approval is required before merge.
+          required: true
