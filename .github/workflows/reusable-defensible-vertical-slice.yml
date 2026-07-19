@@ -196,5 +196,6 @@ jobs:
         with:
           name: defensible-verification-${{ github.repository_id }}-${{ github.sha }}
           path: .automation-evidence/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
