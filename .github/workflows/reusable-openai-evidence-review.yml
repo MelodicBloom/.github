@@ -1,0 +1,177 @@
+name: Reusable OpenAI Evidence Review
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        type: string
+        required: true
+        description: health, product, conversion, affiliate, ads, creative, integration, or design_system
+      evidence-path:
+        type: string
+        required: true
+      model:
+        type: string
+        required: false
+        default: gpt-5-mini-2025-08-07
+      prompt-version:
+        type: string
+        required: false
+        default: ecosystem-evidence-review-v2
+      max-input-bytes:
+        type: number
+        required: false
+        default: 120000
+      post-issue-comment:
+        type: boolean
+        required: false
+        default: false
+      issue-number:
+        type: string
+        required: false
+        default: ""
+      retention-days:
+        type: number
+        required: false
+        default: 30
+    secrets:
+      OPENAI_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: openai-review-${{ github.repository }}-${{ github.ref }}-${{ inputs.mode }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: openai / structured evidence review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ inputs.model }}
+      ANALYSIS_MODE: ${{ inputs.mode }}
+      EVIDENCE_PATH: source/${{ inputs.evidence-path }}
+      PROMPT_VERSION: ${{ inputs.prompt-version }}
+      MAX_INPUT_BYTES: ${{ inputs.max-input-bytes }}
+      OUTPUT_DIR: .automation-evidence/openai-review
+      JOB_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+      JOB_WORKFLOW_SHA: ${{ job.workflow_sha }}
+      JOB_WORKFLOW_REF: ${{ job.workflow_ref }}
+    steps:
+      - name: Refuse unsafe trigger classes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request_target" ]]; then
+            echo "::error::pull_request_target is forbidden for secret-bearing analysis."
+            exit 1
+          fi
+
+      - name: Checkout caller source revision
+        uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Checkout immutable called-workflow implementation
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .control-plane
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Validate bounded evidence input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          test -f "$EVIDENCE_PATH"
+          bytes=$(wc -c < "$EVIDENCE_PATH")
+          if (( bytes == 0 || bytes > MAX_INPUT_BYTES )); then
+            echo "::error::Evidence must contain 1-${MAX_INPUT_BYTES} bytes; found ${bytes}."
+            exit 1
+          fi
+          if grep -Eqi '(sk-[A-Za-z0-9_-]{16,}|OPENAI_API_KEY[=:][^[:space:]]+|github_pat_[A-Za-z0-9_]+)' "$EVIDENCE_PATH"; then
+            echo "::error::Evidence appears to contain a credential. Redact it before analysis."
+            exit 1
+          fi
+          sha256sum "$EVIDENCE_PATH" | tee "$OUTPUT_DIR/evidence.sha256"
+
+      - name: Record skipped analysis when key is absent
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          fs.mkdirSync(process.env.OUTPUT_DIR, { recursive: true });
+          fs.writeFileSync(`${process.env.OUTPUT_DIR}/receipt.json`, JSON.stringify({
+            schema_version: 1,
+            status: 'skipped',
+            reason: 'OPENAI_API_KEY was not supplied by the caller',
+            repository: process.env.GITHUB_REPOSITORY,
+            source_sha: process.env.GITHUB_SHA,
+            caller_workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
+            called_workflow_repository: process.env.JOB_WORKFLOW_REPOSITORY,
+            called_workflow_sha: process.env.JOB_WORKFLOW_SHA,
+            called_workflow_ref: process.env.JOB_WORKFLOW_REF,
+            run_id: process.env.GITHUB_RUN_ID,
+            run_attempt: process.env.GITHUB_RUN_ATTEMPT,
+            mode: process.env.ANALYSIS_MODE,
+            model: process.env.OPENAI_MODEL,
+            prompt_version: process.env.PROMPT_VERSION,
+            generated_at: new Date().toISOString()
+          }, null, 2));
+          NODE
+
+      - name: Run structured OpenAI review
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        shell: bash
+        run: node .control-plane/scripts/automation/openai-evidence-review.mjs
+
+      - name: Post compact issue comment
+        if: ${{ inputs.post-issue-comment && inputs.issue-number != '' && env.OPENAI_API_KEY != '' }}
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue-number }}
+          ANALYSIS_FILE: .automation-evidence/openai-review/analysis.json
+        with:
+          script: |
+            const fs = require('node:fs');
+            const analysis = JSON.parse(fs.readFileSync(process.env.ANALYSIS_FILE, 'utf8'));
+            const lines = [
+              `## OpenAI evidence review — ${analysis.mode}`,
+              '',
+              analysis.executive_summary,
+              '',
+              '### Recommended sequence',
+              ...analysis.recommended_sequence.map((item, index) => `${index + 1}. ${item}`),
+              '',
+              `Human approval required: **${analysis.human_approval_required ? 'yes' : 'no'}**`,
+              '',
+              '_The complete structured response, provenance receipt, prompt hash, source hash, limitations, and rejected options are retained as a workflow artifact._'
+            ];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number(process.env.ISSUE_NUMBER),
+              body: lines.join('\n')
+            });
+
+      - name: Retain OpenAI evidence envelope
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-review-${{ inputs.mode }}-${{ github.repository_id }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: .automation-evidence/openai-review/
+          include-hidden-files: true
+          retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error

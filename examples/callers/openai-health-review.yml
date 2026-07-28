@@ -1,0 +1,24 @@
+name: OpenAI Health Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      evidence-path:
+        description: Repository-relative evidence file to review
+        required: true
+        default: .automation-input/health-evidence.md
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  review:
+    uses: MelodicBloom/.github/.github/workflows/reusable-openai-evidence-review.yml@REPLACE_WITH_IMMUTABLE_SHA
+    with:
+      mode: health
+      evidence-path: ${{ inputs.evidence-path }}
+      model: gpt-5-mini-2025-08-07
+      post-issue-comment: false
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

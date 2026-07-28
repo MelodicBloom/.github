@@ -1,0 +1,27 @@
+name: Governed Opportunity Studio
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: product, conversion, affiliate, ads, creative, integration, or design_system
+        required: true
+        default: product
+      evidence-path:
+        description: Repository-relative brief, analytics export, or research receipt
+        required: true
+        default: .automation-input/opportunity-evidence.md
+
+permissions:
+  contents: read
+
+jobs:
+  propose:
+    uses: MelodicBloom/.github/.github/workflows/reusable-openai-evidence-review.yml@REPLACE_WITH_IMMUTABLE_SHA
+    with:
+      mode: ${{ inputs.mode }}
+      evidence-path: ${{ inputs.evidence-path }}
+      model: gpt-5-mini-2025-08-07
+      post-issue-comment: false
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

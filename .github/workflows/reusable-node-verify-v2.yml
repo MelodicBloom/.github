@@ -1,0 +1,284 @@
+name: Reusable Node Verification v2
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        required: false
+        default: "24"
+      package-manager:
+        type: string
+        required: false
+        default: npm
+      working-directory:
+        type: string
+        required: false
+        default: .
+      profile-path:
+        type: string
+        required: false
+        default: .melodicbloom/verification-profile.json
+      lint-command:
+        type: string
+        required: false
+        default: ""
+      typecheck-command:
+        type: string
+        required: false
+        default: ""
+      test-command:
+        type: string
+        required: false
+        default: ""
+      build-command:
+        type: string
+        required: true
+      specialized-command:
+        type: string
+        required: false
+        default: ""
+      artifact-path:
+        type: string
+        required: false
+        default: ""
+      retention-days:
+        type: number
+        required: false
+        default: 30
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-v2-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify / deterministic vertical slice
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      EVIDENCE_DIR: ${{ github.workspace }}/.automation-evidence
+      PROFILE_ABS: ${{ github.workspace }}/${{ inputs.profile-path }}
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@v4
+
+      - name: Initialize evidence ledger
+        shell: bash
+        run: mkdir -p "$EVIDENCE_DIR/steps" "$EVIDENCE_DIR/logs"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Record runtime identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version | tee "$EVIDENCE_DIR/logs/node-version.txt"
+          npm --version | tee "$EVIDENCE_DIR/logs/npm-version.txt"
+          touch "$EVIDENCE_DIR/steps/runtime-setup"
+
+      - name: Validate repository profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$PROFILE_ABS"
+          node - "$PROFILE_ABS" <<'NODE'
+          const fs = require('node:fs');
+          const profilePath = process.argv[2];
+          const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+          const required = ['schema_version', 'repository', 'classification', 'runtime', 'commands', 'surfaces', 'promotion', 'evidence'];
+          const missing = required.filter((key) => !(key in profile));
+          if (missing.length) throw new Error(`Missing profile keys: ${missing.join(', ')}`);
+          if (profile.repository !== process.env.GITHUB_REPOSITORY) {
+            throw new Error(`Profile repository ${profile.repository} does not match ${process.env.GITHUB_REPOSITORY}`);
+          }
+          if (!Array.isArray(profile.promotion?.required_gates) || profile.promotion.required_gates.length === 0) {
+            throw new Error('promotion.required_gates must contain at least one gate');
+          }
+          NODE
+          touch "$EVIDENCE_DIR/steps/profile-valid"
+
+      - name: Require frozen dependency contract
+        id: lockfile
+        shell: bash
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            npm) expected=package-lock.json ;;
+            pnpm) expected=pnpm-lock.yaml ;;
+            yarn) expected=yarn.lock ;;
+            *) echo "::error::Unsupported package manager: $PACKAGE_MANAGER"; exit 2 ;;
+          esac
+          if [[ ! -f "$expected" ]]; then
+            echo "::error::Frozen dependency contract missing for ${GITHUB_REPOSITORY}: expected ${{ inputs.working-directory }}/$expected."
+            exit 1
+          fi
+          echo "path=${{ inputs.working-directory }}/$expected" >> "$GITHUB_OUTPUT"
+          sha256sum "$expected" | tee "$EVIDENCE_DIR/lockfile.sha256"
+          touch "$EVIDENCE_DIR/steps/lockfile-present"
+
+      - name: Restore package-manager cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/ms-playwright
+            ~/.local/share/pnpm/store
+            ~/.yarn/berry/cache
+          key: verify-v2-${{ runner.os }}-${{ inputs.node-version }}-${{ inputs.package-manager }}-${{ hashFiles(steps.lockfile.outputs.path) }}
+          restore-keys: |
+            verify-v2-${{ runner.os }}-${{ inputs.node-version }}-${{ inputs.package-manager }}-
+
+      - name: Install frozen dependencies
+        shell: bash
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            npm) npm ci --ignore-scripts=false ;;
+            pnpm) corepack enable && pnpm install --frozen-lockfile ;;
+            yarn) corepack enable && yarn install --immutable ;;
+          esac
+          touch "$EVIDENCE_DIR/steps/dependencies-installed"
+
+      - name: Lint
+        if: ${{ inputs.lint-command != '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          ${{ inputs.lint-command }} 2>&1 | tee "$EVIDENCE_DIR/logs/lint.log"
+          touch "$EVIDENCE_DIR/steps/lint"
+
+      - name: Typecheck
+        if: ${{ inputs.typecheck-command != '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          ${{ inputs.typecheck-command }} 2>&1 | tee "$EVIDENCE_DIR/logs/typecheck.log"
+          touch "$EVIDENCE_DIR/steps/typecheck"
+
+      - name: Tests
+        if: ${{ inputs.test-command != '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          ${{ inputs.test-command }} 2>&1 | tee "$EVIDENCE_DIR/logs/tests.log"
+          touch "$EVIDENCE_DIR/steps/tests"
+
+      - name: Record missing test surface
+        if: ${{ inputs.test-command == '' }}
+        shell: bash
+        run: |
+          echo "Automated tests were not declared; they are not represented as passed." | tee -a "$GITHUB_STEP_SUMMARY"
+          touch "$EVIDENCE_DIR/steps/tests-not-declared"
+
+      - name: Production build
+        shell: bash
+        run: |
+          set -o pipefail
+          ${{ inputs.build-command }} 2>&1 | tee "$EVIDENCE_DIR/logs/build.log"
+          touch "$EVIDENCE_DIR/steps/build"
+
+      - name: Repository-specific QA
+        if: ${{ inputs.specialized-command != '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          ${{ inputs.specialized-command }} 2>&1 | tee "$EVIDENCE_DIR/logs/specialized.log"
+          touch "$EVIDENCE_DIR/steps/specialized-qa"
+
+      - name: Digest built artifact
+        if: ${{ inputs.artifact-path != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="${{ inputs.artifact-path }}"
+          test -e "$target"
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+            -cf "$EVIDENCE_DIR/verified-artifact.tar" "$target"
+          sha256sum "$EVIDENCE_DIR/verified-artifact.tar" | tee "$EVIDENCE_DIR/verified-artifact.sha256"
+          touch "$EVIDENCE_DIR/steps/artifact-digested"
+
+      - name: Produce verification receipt
+        if: ${{ always() }}
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          LINT_DECLARED: ${{ inputs.lint-command != '' }}
+          TYPECHECK_DECLARED: ${{ inputs.typecheck-command != '' }}
+          TEST_DECLARED: ${{ inputs.test-command != '' }}
+          SPECIALIZED_DECLARED: ${{ inputs.specialized-command != '' }}
+          ARTIFACT_DECLARED: ${{ inputs.artifact-path != '' }}
+        run: |
+          mkdir -p "$EVIDENCE_DIR/steps"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+          const evidenceDir = process.env.EVIDENCE_DIR;
+          const profilePath = process.env.PROFILE_ABS;
+          const marker = (name) => fs.existsSync(`${evidenceDir}/steps/${name}`);
+          const declared = (name) => process.env[name] === 'true';
+          let profileSha256 = null;
+          let knownOmissions = [];
+          if (fs.existsSync(profilePath)) {
+            const bytes = fs.readFileSync(profilePath);
+            profileSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+            try { knownOmissions = JSON.parse(bytes).evidence?.known_omissions ?? []; } catch {}
+          }
+          const checks = {
+            runtime_setup: marker('runtime-setup'),
+            profile_valid: marker('profile-valid'),
+            lockfile_present: marker('lockfile-present'),
+            dependencies_installed: marker('dependencies-installed'),
+            lint: declared('LINT_DECLARED') ? marker('lint') : null,
+            typecheck: declared('TYPECHECK_DECLARED') ? marker('typecheck') : null,
+            tests: declared('TEST_DECLARED') ? marker('tests') : null,
+            tests_declared: declared('TEST_DECLARED'),
+            build: marker('build'),
+            specialized_qa: declared('SPECIALIZED_DECLARED') ? marker('specialized-qa') : null,
+            artifact_digested: declared('ARTIFACT_DECLARED') ? marker('artifact-digested') : null
+          };
+          const receipt = {
+            schema_version: 2,
+            repository: process.env.GITHUB_REPOSITORY,
+            source_sha: process.env.GITHUB_SHA,
+            workflow_ref: process.env.GITHUB_WORKFLOW_REF,
+            workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
+            run_id: process.env.GITHUB_RUN_ID,
+            run_attempt: process.env.GITHUB_RUN_ATTEMPT,
+            event_name: process.env.GITHUB_EVENT_NAME,
+            ref: process.env.GITHUB_REF,
+            job_status: process.env.JOB_STATUS,
+            node: process.version,
+            profile_sha256: profileSha256,
+            checks,
+            checks_not_completed: Object.entries(checks).filter(([, value]) => value === false).map(([name]) => name),
+            known_omissions: knownOmissions,
+            generated_at: new Date().toISOString(),
+            interpretation: 'True means the declared check completed for this exact source revision. False means it did not complete. Null means the surface was not declared.'
+          };
+          fs.writeFileSync(`${evidenceDir}/verification-receipt.json`, JSON.stringify(receipt, null, 2));
+          NODE
+          cat "$EVIDENCE_DIR/verification-receipt.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-v2-${{ github.repository_id }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: .automation-evidence/
+          include-hidden-files: true
+          retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error

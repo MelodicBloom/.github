@@ -1,0 +1,23 @@
+name: Defensible Verification v2
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: MelodicBloom/.github/.github/workflows/reusable-node-verify-v2.yml@REPLACE_WITH_IMMUTABLE_SHA
+    with:
+      node-version: "24"
+      package-manager: npm
+      lint-command: npm run lint
+      typecheck-command: npm run typecheck
+      test-command: npm test --if-present
+      build-command: npm run build
+      artifact-path: dist

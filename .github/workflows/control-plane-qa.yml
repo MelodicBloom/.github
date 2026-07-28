@@ -1,0 +1,86 @@
+name: Control Plane QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/automation/**"
+      - "schemas/**"
+      - "examples/callers/**"
+      - "docs/automation/**"
+      - "docs/intelligence/**"
+      - "docs/monetization/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: control-plane-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Validate JavaScript syntax
+        run: node --check scripts/automation/openai-evidence-review.mjs
+
+      - name: Validate JSON schemas
+        run: |
+          python -m json.tool schemas/intelligence/ecosystem-recommendation.schema.json >/dev/null
+          python -m json.tool schemas/intelligence/signal.schema.json >/dev/null
+          python -m json.tool schemas/repository-verification-profile.schema.json >/dev/null
+
+      - name: Validate workflow and example YAML syntax
+        run: |
+          ruby -e 'require "yaml"; ARGV.each { |f| YAML.load_file(f); puts "ok #{f}" }' \
+            .github/workflows/*.yml examples/callers/*.yml
+
+      - name: Enforce control-plane safety invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RInE '^\s*pull_request_target:' .github/workflows
+          ! grep -RInE 'uses: MelodicBloom/.github/.+@(main|master)$' examples/callers .github/workflows
+          ! grep -RInE '(sk-[A-Za-z0-9_-]{16,}|github_pat_[A-Za-z0-9_]{16,})' . \
+            --exclude-dir=.git --exclude='*.md'
+          grep -q 'store: false' scripts/automation/openai-evidence-review.mjs
+          grep -q 'human_approval_required' scripts/automation/openai-evidence-review.mjs
+          grep -q 'contents: read' .github/workflows/reusable-node-verify-v2.yml
+          grep -q 'if: ${{ always() }}' .github/workflows/reusable-node-verify-v2.yml
+
+      - name: Record QA receipt
+        if: ${{ always() }}
+        run: |
+          mkdir -p .automation-evidence
+          node <<'NODE'
+          const fs = require('node:fs');
+          fs.writeFileSync('.automation-evidence/control-plane-qa.json', JSON.stringify({
+            schema_version: 1,
+            repository: process.env.GITHUB_REPOSITORY,
+            source_sha: process.env.GITHUB_SHA,
+            workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
+            run_id: process.env.GITHUB_RUN_ID,
+            generated_at: new Date().toISOString(),
+            interpretation: 'This receipt records control-plane syntax and invariant checks only; it does not authorize caller adoption or secret use.'
+          }, null, 2));
+          NODE
+
+      - name: Retain QA receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-plane-qa-${{ github.sha }}-${{ github.run_attempt }}
+          path: .automation-evidence/
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: error

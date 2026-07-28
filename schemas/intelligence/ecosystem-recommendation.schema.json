@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://melodicbloom.dev/schemas/intelligence/ecosystem-recommendation.schema.json",
+  "title": "Ecosystem Evidence Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "repository",
+    "executive_summary",
+    "findings",
+    "opportunities",
+    "contradictions",
+    "unknowns",
+    "rejected_options",
+    "recommended_sequence",
+    "human_approval_required"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [1] },
+    "mode": {
+      "type": "string",
+      "enum": ["health", "product", "conversion", "affiliate", "ads", "creative", "integration", "design_system"]
+    },
+    "repository": { "type": "string", "minLength": 3 },
+    "executive_summary": { "type": "string", "minLength": 1 },
+    "findings": { "type": "array" },
+    "opportunities": { "type": "array" },
+    "contradictions": { "type": "array", "items": { "type": "string" } },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "rejected_options": { "type": "array", "items": { "type": "string" } },
+    "recommended_sequence": { "type": "array", "items": { "type": "string" } },
+    "human_approval_required": { "type": "boolean" }
+  }
+}
