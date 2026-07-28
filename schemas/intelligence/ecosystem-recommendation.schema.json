@@ -18,7 +18,7 @@
     "human_approval_required"
   ],
   "properties": {
-    "schema_version": { "type": "integer", "const": 1 },
+    "schema_version": { "type": "integer", "enum": [1] },
     "mode": {
       "type": "string",
       "enum": ["health", "product", "conversion", "affiliate", "ads", "creative", "integration", "design_system"]
@@ -31,6 +31,6 @@
     "unknowns": { "type": "array", "items": { "type": "string" } },
     "rejected_options": { "type": "array", "items": { "type": "string" } },
     "recommended_sequence": { "type": "array", "items": { "type": "string" } },
-    "human_approval_required": { "type": "boolean", "const": true }
+    "human_approval_required": { "type": "boolean" }
   }
 }
