@@ -13,11 +13,11 @@ on:
       model:
         type: string
         required: false
-        default: gpt-5-mini
+        default: gpt-5-mini-2025-08-07
       prompt-version:
         type: string
         required: false
-        default: ecosystem-evidence-review-v1
+        default: ecosystem-evidence-review-v2
       max-input-bytes:
         type: number
         required: false
@@ -59,6 +59,9 @@ jobs:
       PROMPT_VERSION: ${{ inputs.prompt-version }}
       MAX_INPUT_BYTES: ${{ inputs.max-input-bytes }}
       OUTPUT_DIR: .automation-evidence/openai-review
+      JOB_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+      JOB_WORKFLOW_SHA: ${{ job.workflow_sha }}
+      JOB_WORKFLOW_REF: ${{ job.workflow_ref }}
     steps:
       - name: Refuse unsafe trigger classes
         shell: bash
@@ -74,11 +77,11 @@ jobs:
         with:
           path: source
 
-      - name: Checkout pinned control-plane implementation
+      - name: Checkout immutable called-workflow implementation
         uses: actions/checkout@v4
         with:
-          repository: MelodicBloom/.github
-          ref: ${{ github.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: .control-plane
 
       - name: Set up Node
@@ -116,9 +119,14 @@ jobs:
             reason: 'OPENAI_API_KEY was not supplied by the caller',
             repository: process.env.GITHUB_REPOSITORY,
             source_sha: process.env.GITHUB_SHA,
-            workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
+            caller_workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
+            called_workflow_repository: process.env.JOB_WORKFLOW_REPOSITORY,
+            called_workflow_sha: process.env.JOB_WORKFLOW_SHA,
+            called_workflow_ref: process.env.JOB_WORKFLOW_REF,
             run_id: process.env.GITHUB_RUN_ID,
+            run_attempt: process.env.GITHUB_RUN_ATTEMPT,
             mode: process.env.ANALYSIS_MODE,
+            model: process.env.OPENAI_MODEL,
             prompt_version: process.env.PROMPT_VERSION,
             generated_at: new Date().toISOString()
           }, null, 2));
