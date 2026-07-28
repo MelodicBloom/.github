@@ -55,7 +55,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: ${{ inputs.model }}
       ANALYSIS_MODE: ${{ inputs.mode }}
-      EVIDENCE_PATH: ${{ inputs.evidence-path }}
+      EVIDENCE_PATH: source/${{ inputs.evidence-path }}
       PROMPT_VERSION: ${{ inputs.prompt-version }}
       MAX_INPUT_BYTES: ${{ inputs.max-input-bytes }}
       OUTPUT_DIR: .automation-evidence/openai-review
@@ -69,8 +69,17 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout exact source revision
+      - name: Checkout caller source revision
         uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Checkout pinned control-plane implementation
+        uses: actions/checkout@v4
+        with:
+          repository: MelodicBloom/.github
+          ref: ${{ github.workflow_sha }}
+          path: .control-plane
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -107,6 +116,7 @@ jobs:
             reason: 'OPENAI_API_KEY was not supplied by the caller',
             repository: process.env.GITHUB_REPOSITORY,
             source_sha: process.env.GITHUB_SHA,
+            workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
             run_id: process.env.GITHUB_RUN_ID,
             mode: process.env.ANALYSIS_MODE,
             prompt_version: process.env.PROMPT_VERSION,
@@ -117,7 +127,7 @@ jobs:
       - name: Run structured OpenAI review
         if: ${{ env.OPENAI_API_KEY != '' }}
         shell: bash
-        run: node scripts/automation/openai-evidence-review.mjs
+        run: node .control-plane/scripts/automation/openai-evidence-review.mjs
 
       - name: Post compact issue comment
         if: ${{ inputs.post-issue-comment && inputs.issue-number != '' && env.OPENAI_API_KEY != '' }}
