@@ -63,7 +63,7 @@ const schema = {
     "human_approval_required",
   ],
   properties: {
-    schema_version: { type: "integer", const: 1 },
+    schema_version: { type: "integer", enum: [1] },
     mode: { type: "string", enum: [...allowedModes] },
     repository: { type: "string" },
     executive_summary: { type: "string" },
@@ -116,7 +116,7 @@ const schema = {
     unknowns: { type: "array", items: { type: "string" } },
     rejected_options: { type: "array", items: { type: "string" } },
     recommended_sequence: { type: "array", items: { type: "string" } },
-    human_approval_required: { type: "boolean", const: true },
+    human_approval_required: { type: "boolean" },
   },
 };
 
@@ -164,6 +164,7 @@ const outputText = payload.output
   ?.text;
 if (!outputText) throw new Error("OpenAI response did not contain output_text");
 const analysis = JSON.parse(outputText);
+if (analysis.schema_version !== 1) throw new Error("Structured output schema_version mismatch");
 if (analysis.repository !== process.env.GITHUB_REPOSITORY) {
   throw new Error(`Structured output repository mismatch: ${analysis.repository}`);
 }
@@ -177,7 +178,9 @@ await writeFile(`${process.env.OUTPUT_DIR}/receipt.json`, JSON.stringify({
   status: "completed",
   repository: process.env.GITHUB_REPOSITORY,
   source_sha: process.env.GITHUB_SHA,
+  workflow_sha: process.env.GITHUB_WORKFLOW_SHA ?? null,
   run_id: process.env.GITHUB_RUN_ID,
+  run_attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   mode: process.env.ANALYSIS_MODE,
   model: process.env.OPENAI_MODEL,
   response_id: payload.id ?? null,
@@ -192,6 +195,6 @@ await writeFile(`${process.env.OUTPUT_DIR}/receipt.json`, JSON.stringify({
   generated_at: new Date().toISOString(),
   limitations: [
     "The review is advisory and cannot modify source, deploy, publish, buy ads, create affiliate relationships, or approve changes.",
-    "Model behavior can vary; the prompt, model, request ID, and source hash are retained for auditability.",
+    "Model outputs can vary; the pinned model, prompt version/hash, request IDs, workflow SHA, and evidence hash are retained for auditability.",
   ],
 }, null, 2));
