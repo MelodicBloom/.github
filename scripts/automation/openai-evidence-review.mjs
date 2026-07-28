@@ -178,7 +178,10 @@ await writeFile(`${process.env.OUTPUT_DIR}/receipt.json`, JSON.stringify({
   status: "completed",
   repository: process.env.GITHUB_REPOSITORY,
   source_sha: process.env.GITHUB_SHA,
-  workflow_sha: process.env.GITHUB_WORKFLOW_SHA ?? null,
+  caller_workflow_sha: process.env.GITHUB_WORKFLOW_SHA ?? null,
+  called_workflow_repository: process.env.JOB_WORKFLOW_REPOSITORY ?? null,
+  called_workflow_sha: process.env.JOB_WORKFLOW_SHA ?? null,
+  called_workflow_ref: process.env.JOB_WORKFLOW_REF ?? null,
   run_id: process.env.GITHUB_RUN_ID,
   run_attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   mode: process.env.ANALYSIS_MODE,
@@ -195,6 +198,6 @@ await writeFile(`${process.env.OUTPUT_DIR}/receipt.json`, JSON.stringify({
   generated_at: new Date().toISOString(),
   limitations: [
     "The review is advisory and cannot modify source, deploy, publish, buy ads, create affiliate relationships, or approve changes.",
-    "Model outputs can vary; the pinned model, prompt version/hash, request IDs, workflow SHA, and evidence hash are retained for auditability.",
+    "Model outputs can vary; the pinned model, prompt version/hash, request IDs, called-workflow SHA, and evidence hash are retained for auditability.",
   ],
 }, null, 2));
