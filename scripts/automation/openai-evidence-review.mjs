@@ -1,5 +1,49 @@
 import { createHash, randomUUID } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+
+const redact = (value) => String(value ?? "Unknown failure")
+  .replace(/sk-[A-Za-z0-9_-]+/g, "[REDACTED_OPENAI_KEY]")
+  .replace(/github_pat_[A-Za-z0-9_]+/g, "[REDACTED_GITHUB_TOKEN]")
+  .replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]")
+  .slice(0, 2000);
+
+const writeFailureReceipt = (reason) => {
+  const outputDir = process.env.OUTPUT_DIR || ".automation-evidence/openai-review";
+  mkdirSync(outputDir, { recursive: true });
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  writeFileSync(`${outputDir}/receipt.json`, JSON.stringify({
+    schema_version: 1,
+    status: "failed",
+    repository: process.env.GITHUB_REPOSITORY ?? null,
+    source_sha: process.env.GITHUB_SHA ?? null,
+    caller_workflow_sha: process.env.GITHUB_WORKFLOW_SHA ?? null,
+    called_workflow_repository: process.env.JOB_WORKFLOW_REPOSITORY ?? null,
+    called_workflow_sha: process.env.JOB_WORKFLOW_SHA ?? null,
+    called_workflow_ref: process.env.JOB_WORKFLOW_REF ?? null,
+    run_id: process.env.GITHUB_RUN_ID ?? null,
+    run_attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+    mode: process.env.ANALYSIS_MODE ?? null,
+    model: process.env.OPENAI_MODEL ?? null,
+    prompt_version: process.env.PROMPT_VERSION ?? null,
+    error_class: error.name,
+    error_message: redact(error.message),
+    generated_at: new Date().toISOString(),
+    interpretation: "The analyzer failed before producing a validated recommendation. This receipt is evidence of failure, not a partial result or pass."
+  }, null, 2));
+};
+
+process.on("uncaughtException", (error) => {
+  writeFailureReceipt(error);
+  console.error(redact(error?.stack || error));
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  writeFailureReceipt(reason);
+  console.error(redact(reason instanceof Error ? reason.stack : reason));
+  process.exit(1);
+});
 
 const required = [
   "OPENAI_API_KEY",
