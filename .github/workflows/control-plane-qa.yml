@@ -2,6 +2,16 @@ name: Control Plane QA
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/automation/**"
+      - "schemas/**"
+      - "examples/callers/**"
+      - "docs/automation/**"
+      - "docs/intelligence/**"
+      - "docs/monetization/**"
   pull_request:
     branches: [main]
     paths:
