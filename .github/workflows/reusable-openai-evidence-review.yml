@@ -1,6 +1,11 @@
 name: Reusable OpenAI Evidence Review
 
 on:
+  push:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/reusable-openai-evidence-review.yml"
+      - "scripts/automation/openai-evidence-review.mjs"
   workflow_call:
     inputs:
       mode:
@@ -47,7 +52,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-syntax:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Validate analyzer syntax
+        run: node --check scripts/automation/openai-evidence-review.mjs
+
   analyze:
+    if: github.event_name == 'workflow_call'
     name: openai / structured evidence review
     runs-on: ubuntu-latest
     timeout-minutes: 15
