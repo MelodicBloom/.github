@@ -59,9 +59,6 @@ jobs:
       PROMPT_VERSION: ${{ inputs.prompt-version }}
       MAX_INPUT_BYTES: ${{ inputs.max-input-bytes }}
       OUTPUT_DIR: .automation-evidence/openai-review
-      JOB_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
-      JOB_WORKFLOW_SHA: ${{ job.workflow_sha }}
-      JOB_WORKFLOW_REF: ${{ job.workflow_ref }}
     steps:
       - name: Refuse unsafe trigger classes
         shell: bash
@@ -72,6 +69,29 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve immutable called-workflow provenance
+        id: workflow-provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow_ref="${GITHUB_WORKFLOW_REF:?}"
+          workflow_sha="${GITHUB_WORKFLOW_SHA:?}"
+          workflow_repo="${workflow_ref%%/.github/workflows/*}"
+          if [[ -z "${workflow_repo}" || "${workflow_repo}" == "${workflow_ref}" ]]; then
+            echo "::error::Unable to derive the called-workflow repository from ${workflow_ref}."
+            exit 1
+          fi
+          {
+            echo "workflow_repository=${workflow_repo}"
+            echo "workflow_sha=${workflow_sha}"
+            echo "workflow_ref=${workflow_ref}"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "JOB_WORKFLOW_REPOSITORY=${workflow_repo}"
+            echo "JOB_WORKFLOW_SHA=${workflow_sha}"
+            echo "JOB_WORKFLOW_REF=${workflow_ref}"
+          } >> "$GITHUB_ENV"
+
       - name: Checkout caller source revision
         uses: actions/checkout@v4
         with:
@@ -80,8 +100,8 @@ jobs:
       - name: Checkout immutable called-workflow implementation
         uses: actions/checkout@v4
         with:
-          repository: ${{ job.workflow_repository }}
-          ref: ${{ job.workflow_sha }}
+          repository: ${{ steps.workflow-provenance.outputs.workflow_repository }}
+          ref: ${{ steps.workflow-provenance.outputs.workflow_sha }}
           path: .control-plane
 
       - name: Set up Node
