@@ -2,6 +2,10 @@ name: Control Plane QA
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "fix/**"
+      - "automation/**"
   pull_request:
     branches: [main]
     paths:
@@ -26,6 +30,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -51,12 +57,40 @@ jobs:
           set -euo pipefail
           ! grep -RInE '^\s*pull_request_target:' .github/workflows
           ! grep -RInE 'uses: MelodicBloom/.github/.+@(main|master)$' examples/callers .github/workflows
-          ! grep -RInE '(sk-[A-Za-z0-9_-]{16,}|github_pat_[A-Za-z0-9_]{16,})' . \
+          ! grep -RInE '(sk-[A-Za-z0-9_-]{16,}|github_pat_[A-Za-z0-9_]{16,}|gh[pousr]_[A-Za-z0-9_]{16,})' . \
             --exclude-dir=.git --exclude='*.md'
           grep -q 'store: false' scripts/automation/openai-evidence-review.mjs
           grep -q 'human_approval_required' scripts/automation/openai-evidence-review.mjs
           grep -q 'contents: read' .github/workflows/reusable-node-verify-v2.yml
-          grep -q 'if: ${{ always() }}' .github/workflows/reusable-node-verify-v2.yml
+          grep -Fq 'always()' .github/workflows/reusable-node-verify-v2.yml
+
+      - name: Verify OpenAI evidence boundary hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow=.github/workflows/reusable-openai-evidence-review.yml
+          analyzer=scripts/automation/openai-evidence-review.mjs
+          schema=schemas/intelligence/ecosystem-recommendation.schema.json
+
+          test "$(grep -c 'persist-credentials: false' "$workflow")" -ge 2
+          grep -Fq 'candidate="$(realpath -m "$EVIDENCE_PATH")"' "$workflow"
+          grep -Fq 'Evidence may not read Git metadata.' "$workflow"
+          grep -Fq 'x-access-token:' "$workflow"
+          grep -Fq 'gh[pousr]_' "$workflow"
+
+          grep -Fq 'x-access-token:[REDACTED]' "$analyzer"
+          grep -Fq 'const contentItems = Array.isArray(payload.output)' "$analyzer"
+          grep -Fq 'typeof content.text?.value === "string"' "$analyzer"
+
+          python - "$schema" <<'PY'
+          import json, sys
+          with open(sys.argv[1], encoding="utf-8") as fh:
+              schema = json.load(fh)
+          props = schema["properties"]
+          assert props["findings"].get("items", {}).get("type") == "object"
+          assert props["opportunities"].get("items", {}).get("type") == "object"
+          assert props["human_approval_required"].get("const") is True
+          PY
 
       - name: Record QA receipt
         if: ${{ always() }}

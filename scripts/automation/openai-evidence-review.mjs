@@ -5,6 +5,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 const redact = (value) => String(value ?? "Unknown failure")
   .replace(/sk-[A-Za-z0-9_-]+/g, "[REDACTED_OPENAI_KEY]")
   .replace(/github_pat_[A-Za-z0-9_]+/g, "[REDACTED_GITHUB_TOKEN]")
+  .replace(/\bgh[pousr]_[A-Za-z0-9_]+\b/g, "[REDACTED_GITHUB_TOKEN]")
+  .replace(/x-access-token:[^\s@]+/gi, "x-access-token:[REDACTED]")
   .replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]")
   .slice(0, 2000);
 
@@ -198,14 +200,23 @@ const response = await fetch("https://api.openai.com/v1/responses", {
 });
 const responseText = await response.text();
 if (!response.ok) {
-  const safeMessage = responseText.slice(0, 2000).replace(/sk-[A-Za-z0-9_-]+/g, "[REDACTED]");
+  const safeMessage = redact(responseText);
   throw new Error(`OpenAI request failed (${response.status}): ${safeMessage}`);
 }
 const payload = JSON.parse(responseText);
-const outputText = payload.output
-  ?.flatMap((item) => item.type === "message" ? item.content ?? [] : [])
-  .find((content) => content.type === "output_text")
-  ?.text;
+const contentItems = Array.isArray(payload.output)
+  ? payload.output.flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+  : [];
+const outputText = typeof payload.output_text === "string"
+  ? payload.output_text
+  : contentItems
+      .filter((content) => content?.type === "output_text")
+      .map((content) => {
+        if (typeof content.text === "string") return content.text;
+        if (typeof content.text?.value === "string") return content.text.value;
+        return "";
+      })
+      .find(Boolean);
 if (!outputText) throw new Error("OpenAI response did not contain output_text");
 const analysis = JSON.parse(outputText);
 if (analysis.schema_version !== 1) throw new Error("Structured output schema_version mismatch");

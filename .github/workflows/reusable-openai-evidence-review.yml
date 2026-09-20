@@ -96,6 +96,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source
+          persist-credentials: false
 
       - name: Checkout immutable called-workflow implementation
         uses: actions/checkout@v4
@@ -103,6 +104,7 @@ jobs:
           repository: ${{ steps.workflow-provenance.outputs.workflow_repository }}
           ref: ${{ steps.workflow-provenance.outputs.workflow_sha }}
           path: .control-plane
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -114,16 +116,42 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$OUTPUT_DIR"
-          test -f "$EVIDENCE_PATH"
+
+          source_root="$(realpath source)"
+          candidate="$(realpath -m "$EVIDENCE_PATH")"
+          case "$candidate" in
+            "$source_root"/*) ;;
+            *)
+              echo "::error::Evidence path must resolve inside the caller checkout."
+              exit 1
+              ;;
+          esac
+
+          relative="${candidate#"$source_root"/}"
+          if [[ "$relative" == ".git" || "$relative" == .git/* || "$relative" == */.git/* ]]; then
+            echo "::error::Evidence may not read Git metadata."
+            exit 1
+          fi
+
+          if [[ ! -f "$candidate" ]]; then
+            echo "::error::Evidence path must resolve to a regular file."
+            exit 1
+          fi
+
+          EVIDENCE_PATH="$candidate"
+          echo "EVIDENCE_PATH=$EVIDENCE_PATH" >> "$GITHUB_ENV"
+
           bytes=$(wc -c < "$EVIDENCE_PATH")
           if (( bytes == 0 || bytes > MAX_INPUT_BYTES )); then
             echo "::error::Evidence must contain 1-${MAX_INPUT_BYTES} bytes; found ${bytes}."
             exit 1
           fi
-          if grep -Eqi '(sk-[A-Za-z0-9_-]{16,}|OPENAI_API_KEY[=:][^[:space:]]+|github_pat_[A-Za-z0-9_]+)' "$EVIDENCE_PATH"; then
+
+          if grep -Eqi '(sk-[A-Za-z0-9_-]{16,}|OPENAI_API_KEY[[:space:]]*[=:][[:space:]]*[^[:space:]]+|github_pat_[A-Za-z0-9_]{16,}|gh[pousr]_[A-Za-z0-9_]{16,}|x-access-token:[^[:space:]]+|authorization:[[:space:]]*bearer[[:space:]]+[^[:space:]]+)' "$EVIDENCE_PATH"; then
             echo "::error::Evidence appears to contain a credential. Redact it before analysis."
             exit 1
           fi
+
           sha256sum "$EVIDENCE_PATH" | tee "$OUTPUT_DIR/evidence.sha256"
 
       - name: Record skipped analysis when key is absent
