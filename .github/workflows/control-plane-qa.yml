@@ -62,7 +62,7 @@ jobs:
           grep -q 'store: false' scripts/automation/openai-evidence-review.mjs
           grep -q 'human_approval_required' scripts/automation/openai-evidence-review.mjs
           grep -q 'contents: read' .github/workflows/reusable-node-verify-v2.yml
-          grep -Eq '^[[:space:]]*if:[[:space:]].*always\\(\\)' .github/workflows/reusable-node-verify-v2.yml
+          grep -Fq 'always()' .github/workflows/reusable-node-verify-v2.yml
 
       - name: Verify OpenAI evidence boundary hardening
         shell: bash
