@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Immersive research authority routing seed v0.1 (candidate, independent of registry PR #14)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "status",
+    "boundary",
+    "owners",
+    "consumers",
+    "conflicts",
+    "review_gates"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1.0-proposal"
+    },
+    "status": {
+      "const": "proposed"
+    },
+    "boundary": {
+      "type": "string",
+      "minLength": 20
+    },
+    "owners": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repository",
+          "owns",
+          "does_not_own",
+          "seed_path"
+        ],
+        "properties": {
+          "repository": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          },
+          "owns": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "does_not_own": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "seed_path": {
+            "type": "string",
+            "minLength": 4
+          }
+        }
+      }
+    },
+    "consumers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repository",
+          "role"
+        ],
+        "properties": {
+          "repository": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "requires_approval": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "description",
+          "resolution"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "resolution": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "review_gates": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
