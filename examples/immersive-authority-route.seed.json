@@ -1,0 +1,112 @@
+{
+  "version": "0.1.0-proposal",
+  "status": "proposed",
+  "boundary": "Cross-repository routing of an immersive optical/semantic/motion research specimen without changing automation authority or merging the pending canonical repository registry.",
+  "owners": [
+    {
+      "repository": "MelodicBloom/.github",
+      "owns": [
+        "cross-repository policy",
+        "repository classification",
+        "verification and approval gates",
+        "cross-project mutation permissions"
+      ],
+      "does_not_own": [
+        "optical constants",
+        "per-project GPU target values",
+        "scene navigation"
+      ],
+      "seed_path": "docs/repositories/IMMERSIVE_SYSTEM_AUTHORITY_MAP_v0.1.md"
+    },
+    {
+      "repository": "qt314wink/shader-grammar",
+      "owns": [
+        "13 optical operators and 12 recipes",
+        "optical mechanism interpretation",
+        "shader implementation profile evidence"
+      ],
+      "does_not_own": [
+        "acoustic coefficients",
+        "UI animation tokens",
+        "organization-wide permissions"
+      ],
+      "seed_path": "docs/PBR_REALTIME_IMPLEMENTATION_PROFILE_v0.1.md"
+    },
+    {
+      "repository": "qt314wink/seed-loom",
+      "owns": [
+        "semantic material and scene specimen identity",
+        "evidence / uncertainty / alternatives",
+        "temporal interpretation and provenance"
+      ],
+      "does_not_own": [
+        "runtime agent scheduling",
+        "GitHub writes",
+        "renderer implementation specifics"
+      ],
+      "seed_path": "docs/IMMERSIVE_SPECIMEN_SEMANTICS_v0.1.md"
+    },
+    {
+      "repository": "MelodicBloom/design-standards-2026-2027",
+      "owns": [
+        "visual/interaction presentation",
+        "semantic UI motion",
+        "proposed per-scene performance profiles",
+        "accessibility and fallback rules"
+      ],
+      "does_not_own": [
+        "physical BRDF operators",
+        "acoustic physics",
+        "runtime governance permissions"
+      ],
+      "seed_path": "docs/immersive/SCENE_APPEARANCE_MOTION_BUDGET_v0.1.md"
+    }
+  ],
+  "consumers": [
+    {
+      "repository": "MelodicBloom/shader-gallery",
+      "role": "WebGL/GLSL viewer, test harness and visual evidence consumer; cannot amend Shader Grammar operators silently.",
+      "requires_approval": true
+    },
+    {
+      "repository": "MelodicBloom/aether",
+      "role": "Separate Next.js/WebGL experience; consumes current material and design authority through adapters.",
+      "requires_approval": true
+    },
+    {
+      "repository": "MelodicBloom/project-constellation",
+      "role": "Narrative/atlas display consumer, not physical material source-of-truth.",
+      "requires_approval": true
+    },
+    {
+      "repository": "qt314wink/seed-loom",
+      "role": "Governed reasoning authority; must not gain GitHub write capability through this routing.",
+      "requires_approval": false
+    }
+  ],
+  "conflicts": [
+    {
+      "description": "A shader gallery look conflicts with a physical material mechanism recipe.",
+      "resolution": "Retain visual look as consumer artifact, attach proposed mechanism alternative to shader-grammar review; do not silently rewrite the 13 operator catalog."
+    },
+    {
+      "description": "An old numeric render threshold conflicts with a recent measured trace.",
+      "resolution": "Preserve both with environments, timestamps, sources and superseding decision; never replace a measured value without provenance."
+    },
+    {
+      "description": "A visual roughness value is requested as an acoustic absorption coefficient.",
+      "resolution": "Reject cross-domain inference unless independent acoustic evidence and units are supplied."
+    },
+    {
+      "description": "A product wishes to impose new global motion or repository policy.",
+      "resolution": "Proposal to canonical design or control plane; product may use bounded documented exception meanwhile."
+    }
+  ],
+  "review_gates": [
+    "Confirm PR #14 canonical registry status; do not insert new registry membership into an unmerged or limited-ten registry.",
+    "Require producer/consumer versions, branch/commit identity, validation outputs and evidence class before propagation.",
+    "Keep default read-only; approved PRs are needed for mutations in other repositories; never interpret a pointer as permission.",
+    "Review performance thresholds on real target devices before promoting candidate budgets to an enforceable quality gate.",
+    "Preserve distinct approvals for optical validation, acoustic validation, usability studies and performance traces."
+  ]
+}
