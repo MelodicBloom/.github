@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://melodicbloom.github.io/schemas/repositories/registry.schema.json",
+  "title": "MelodicBloom Canonical Repository Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "observed_at", "control_plane", "repositories"],
+  "properties": {
+    "version": { "type": "string", "const": "1.0.0" },
+    "observed_at": { "type": "string", "format": "date" },
+    "control_plane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "baseline_sha", "branch"],
+      "properties": {
+        "repository": { "type": "string", "const": "MelodicBloom/.github" },
+        "baseline_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "branch": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/repositoryRecord" }
+    }
+  },
+  "$defs": {
+    "repositoryRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_name", "canonical_status", "lifecycle", "owner",
+        "default_branch", "observed_sha", "runtime", "deployment",
+        "runtime_access", "relationships", "documentation",
+        "upstream_sync", "uncertainties", "provenance"
+      ],
+      "properties": {
+        "full_name": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+        "canonical_status": {
+          "enum": ["canonical", "candidate", "reference", "mirror", "superseded", "unknown"]
+        },
+        "lifecycle": {
+          "enum": ["governance", "experimental", "candidate", "production", "reference", "archived", "unknown"]
+        },
+        "owner": { "type": "string", "minLength": 1 },
+        "default_branch": { "type": "string", "minLength": 1 },
+        "observed_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "package_manager", "lockfile", "contract"],
+          "properties": {
+            "kind": { "enum": ["node", "python", "static", "mixed", "documentation", "unknown"] },
+            "package_manager": { "enum": ["npm", "pnpm", "yarn", "bun", "pip", "uv", "poetry", "none", "unknown"] },
+            "lockfile": { "type": ["string", "null"] },
+            "contract": { "type": "string", "minLength": 1 }
+          }
+        },
+        "deployment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["disposition", "authority", "vercel_project_id", "vercel_project_name"],
+          "properties": {
+            "disposition": {
+              "enum": ["none", "vercel-production", "vercel-preview-only", "vercel-auxiliary", "external", "local-runner", "unknown"]
+            },
+            "authority": { "type": "string", "minLength": 1 },
+            "vercel_project_id": { "type": ["string", "null"] },
+            "vercel_project_name": { "type": ["string", "null"] }
+          }
+        },
+        "runtime_access": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["vercel_connect", "github_permission_profile", "notes"],
+          "properties": {
+            "vercel_connect": { "enum": ["disabled", "candidate", "required", "unknown"] },
+            "github_permission_profile": {
+              "enum": ["none", "read-only", "review-agent", "bounded-branch-writer", "unknown"]
+            },
+            "notes": { "type": "string" }
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "target"],
+            "properties": {
+              "type": { "enum": ["predecessor", "successor", "mirror", "fork", "deployment-sibling", "governed-by", "related"] },
+              "target": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "documentation": { "type": "string", "minLength": 1 },
+        "upstream_sync": { "type": "string", "minLength": 1 },
+        "uncertainties": { "type": "array", "items": { "type": "string" } },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository_url", "commit_url", "observed_at"],
+          "properties": {
+            "repository_url": { "type": "string", "format": "uri" },
+            "commit_url": { "type": "string", "format": "uri" },
+            "observed_at": { "type": "string", "format": "date" }
+          }
+        }
+      }
+    }
+  }
+}
