@@ -169,13 +169,19 @@ Phase 1 is complete when:
 - no production/settings/connector mutation has occurred;
 - the draft PR clearly separates observed facts, provisional classifications, and human decisions.
 
-## Human decisions to surface, not make
+## Human decisions (answered 2026-10-26 — classification only)
 
-1. Whether `github/cordovan-ladder` should be installed for both `qt314wink` and `MelodicBloom`, with selected repositories only.
-2. Whether Seed Loom should receive `read-only` first or `bounded-branch-writer` from the start.
-3. Whether `agent-runtime-control-center` actually needs Vercel Connect at runtime.
-4. Whether `svg-filter-lab-yodd` is the intended canonical Vercel deployment for `qt314wink/svg-filter-lab`.
-5. Whether the OBSAD Vercel project is an auxiliary dashboard worth preserving.
-6. Whether `nextjs-boilerplate` should later be renamed/consolidated into a LITHOMEMPHIS canonical identity.
+Recorded from Jennipher's decision comment: https://github.com/MelodicBloom/.github/pull/14#issuecomment-6425652920 . Summary: `docs/repositories/DECISION_RECORD_2026-10-26.md`.
 
-Do not block evidence collection on these choices; block only the corresponding mutation.
+1. `github/cordovan-ladder`: **not installed** for either account in Phase 1; reconsider only via a separate, repository-scoped proof after a concrete runtime action is demonstrated.
+2. Seed Loom: **`read-only`** first; escalate to `bounded-branch-writer` only via a separate acceptance-tested branch/PR workflow; never direct-to-main.
+3. `agent-runtime-control-center`: Vercel Connect **`disabled`**; no runtime GitHub action proven.
+4. `svg-filter-lab`: deployment authority stays **`unknown`**; neither `svg-filter-lab-yodd` nor `svg-filter-lab` is canonical (both repo-linked, preview-only, no production deploy).
+5. Observation Ad Pipeline: Vercel project preserved as **auxiliary preview/dashboard surface**, not Termux/ComfyUI execution authority.
+6. `nextjs-boilerplate`: **current identity retained**; LITHOMEMPHIS rename/consolidation deferred to a separately scoped issue.
+
+These answers authorize registry classification only. They do **not** authorize connector/app installation, repository-setting changes, Vercel mutation, credentials, direct-to-main writes, transfers, archival, or deletion; those mutations remain blocked and require separate explicit human action.
+
+### Decision log
+
+- 2026-10-26 — Phase 1 decisions #1–#6 answered by Jennipher in PR #14 (issuecomment-6425652920); applied to `repositories/registry.yml` as classification-only updates. PR remains draft pending her ready-for-review/merge call.

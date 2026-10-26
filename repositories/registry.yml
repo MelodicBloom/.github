@@ -32,7 +32,7 @@
       "observed_sha": "4c74f1e1bd2e0e68f5ee835380c7ef69d14137ff",
       "runtime": {"kind":"node","package_manager":"pnpm","lockfile":"pnpm-lock.yaml","contract":"Root pnpm-lock.yaml + portfolio-registry.yml (pnpm/action-setup, Node 24). package.json declares no engines/packageManager."},
       "deployment": {"disposition":"unknown","authority":"No deployment authority asserted in phase 1 without direct Vercel evidence.","vercel_project_id":null,"vercel_project_name":null},
-      "runtime_access": {"vercel_connect":"candidate","github_permission_profile":"review-agent","notes":"Candidate for delegated GitHub access only if the control center executes repository review/repair actions at runtime."},
+      "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"review-agent","notes":"Phase 1 decision #3: no runtime GitHub action has been proven, so Vercel Connect stays disabled. Profile review-agent is a classification of possible future need only; no install authorized."},
       "relationships": [{"type":"governed-by","target":"MelodicBloom/.github"}],
       "documentation": "README.md",
       "upstream_sync": "No upstream policy asserted in phase 1.",
@@ -52,7 +52,7 @@
       "relationships": [{"type":"related","target":"qt314wink/aether"}],
       "documentation": "README.md",
       "upstream_sync": "Relationship to qt314wink/aether requires explicit uniqueness/supersession review.",
-      "uncertainties": ["Canonical relationship to qt314wink/aether is not yet decided.","Canonical relationship to qt314wink/aether is not yet decided.","2026-10-26: Node major unresolved (CI 20 vs 22, no engines).","2026-10-26: Vercel project aether-specimen (prj_TrnX6XVbmT7CUcVusRJSvFpS643x, created 2026-10-26 11:35 EDT) is Git-linked to this repo per list_projects repoUrl filter; production target/purpose not proven, so disposition remains unknown and project is not recorded as authority."],
+      "uncertainties": ["Canonical relationship to qt314wink/aether is not yet decided.","2026-10-26: Node major unresolved (CI 20 vs 22, no engines).","2026-10-26: Vercel project aether-specimen (prj_TrnX6XVbmT7CUcVusRJSvFpS643x, created 2026-10-26 11:35 EDT) is Git-linked to this repo per list_projects repoUrl filter; production target/purpose not proven, so disposition remains unknown and project is not recorded as authority."],
       "provenance": {"repository_url":"https://github.com/MelodicBloom/aether","commit_url":"https://github.com/MelodicBloom/aether/commit/dd45f60dd6c9195a9c29a2c311bf4cfab7705716","observed_at":"2026-10-26"}
     },
     {
@@ -96,7 +96,7 @@
       "observed_sha": "574fdbb3320c06f8fa9b19c4c2e684ee6f53b645",
       "runtime": {"kind":"mixed","package_manager":"npm","lockfile":"package-lock.json","contract":"package.json packageManager npm@10.9.2, engines node ^20.19.0 || >=22.12.0; root package-lock.json; CI mixes Node 20/22 and Python 3.11 workflows."},
       "deployment": {"disposition":"vercel-production","authority":"Vercel team melodicbloom project seed-loom (prj_86ORYoi9fhYFO5Gfuvp7utAdXLRt) re-verified 2026-10-26: ID/name match and list_projects repoUrl filter links it to this repository.","vercel_project_id":"prj_86ORYoi9fhYFO5Gfuvp7utAdXLRt","vercel_project_name":"seed-loom"},
-      "runtime_access": {"vercel_connect":"candidate","github_permission_profile":"bounded-branch-writer","notes":"Attach cordovan-ladder only after installation scope is limited and mutation is branch/PR-mediated; no direct writes to main."},
+      "runtime_access": {"vercel_connect":"candidate","github_permission_profile":"read-only","notes":"Phase 1 decision #2: start read-only; escalate to bounded-branch-writer only through a separate acceptance-tested branch/PR workflow; never direct-to-main. vercel_connect=candidate records classified need only; install deferred per decision #1 (no github/cordovan-ladder install for either account in Phase 1)."},
       "relationships": [{"type":"governed-by","target":"MelodicBloom/.github"}],
       "documentation": "README.md",
       "upstream_sync": "Canonical user-owned Seed Loom repository; portfolio governance is coordinated through MelodicBloom/.github.",
@@ -111,12 +111,12 @@
       "default_branch": "main",
       "observed_sha": "f8454d5e4974ffc1d6c7cfdb7c6ef05f35604543",
       "runtime": {"kind":"python","package_manager":"pip","lockfile":null,"contract":"Termux control plane + remote ComfyUI runner; pyproject.toml (setuptools, requires-python >=3.10) + requirements.txt; CI uses Python 3.12. Preserve pure-Python compatibility and immutable run receipts."},
-      "deployment": {"disposition":"vercel-auxiliary","authority":"Core execution remains Termux/remote GPU; a Vercel project exists but must not become the execution authority by accident.","vercel_project_id":"prj_oQd6jMBNBz8CHl2QxLPJmY3HdSJq","vercel_project_name":"observation-ad-pipeline"},
+      "deployment": {"disposition":"vercel-auxiliary","authority":"Decision #5 (2026-10-26): existing Vercel project is preserved as an auxiliary preview/dashboard surface only; Termux/ComfyUI (remote GPU) execution remains the execution authority, never Vercel.","vercel_project_id":"prj_oQd6jMBNBz8CHl2QxLPJmY3HdSJq","vercel_project_name":"observation-ad-pipeline"},
       "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"none","notes":"Core runner does not need delegated GitHub runtime credentials."},
       "relationships": [],
       "documentation": "README.md",
       "upstream_sync": "No upstream mirror policy asserted.",
-      "uncertainties": ["Purpose of the Vercel project should be documented as dashboard/auxiliary or retired after uniqueness review.","2026-10-26: Vercel project re-verified as Git-linked to this repo; latest deployment READY with target=null (preview, 2026-10-18 09:45 EDT); remains auxiliary, not execution authority.","2026-10-26: no pip lockfile (requirements.txt is unpinned-range); package_manager=pip from pyproject/requirements only."],
+      "uncertainties": ["2026-10-26 decision (PR #14 issuecomment-6425652920) #5: Vercel project preserved as auxiliary preview/dashboard, not execution authority.","2026-10-26: Vercel project re-verified as Git-linked to this repo; latest deployment READY with target=null (preview, 2026-10-18 09:45 EDT); remains auxiliary, not execution authority.","2026-10-26: no pip lockfile (requirements.txt is unpinned-range); package_manager=pip from pyproject/requirements only."],
       "provenance": {"repository_url":"https://github.com/qt314wink/observation-ad-pipeline","commit_url":"https://github.com/qt314wink/observation-ad-pipeline/commit/f8454d5e4974ffc1d6c7cfdb7c6ef05f35604543","observed_at":"2026-10-26"}
     },
     {
@@ -131,8 +131,8 @@
       "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"none","notes":"Ordinary Git integration is sufficient for this product surface."},
       "relationships": [{"type":"related","target":"lithomemphis_collective_advanced_experience"}],
       "documentation": "README.md",
-      "upstream_sync": "Naming/canonicalization decision required before repository rename or deployment consolidation.",
-      "uncertainties": ["Whether nextjs-boilerplate will be renamed to a canonical LITHOMEMPHIS repository remains a human decision.","2026-10-26: Node contract not declared in repo (only Vercel project nodeVersion 24.x).","2026-10-26: Vercel project Git-linked to this repo; latest deployment READY but target=null (preview)."],
+      "upstream_sync": "Current identity retained in Phase 1 (decision #6); rename/consolidation deferred to a separate issue.",
+      "uncertainties": ["2026-10-26 decision (PR #14 issuecomment-6425652920) #6: retain current identity in Phase 1; any LITHOMEMPHIS rename/consolidation deferred to a separately scoped decision/implementation issue.","2026-10-26: Node contract not declared in repo (only Vercel project nodeVersion 24.x).","2026-10-26: Vercel project Git-linked to this repo; latest deployment READY but target=null (preview)."],
       "provenance": {"repository_url":"https://github.com/qt314wink/nextjs-boilerplate","commit_url":"https://github.com/qt314wink/nextjs-boilerplate/commit/b1bcbcc3199b41b37616bd377a0461e4a6f489bf","observed_at":"2026-10-26"}
     },
     {
@@ -143,12 +143,12 @@
       "default_branch": "main",
       "observed_sha": "951f95f974687ee03b574b95a5b96920c39c8172",
       "runtime": {"kind":"node","package_manager":"npm","lockfile":"package-lock.json","contract":"package.json engines node 22.x, npm >=10; root package-lock.json; CI Node 22 with `npm ci`. Vercel projects set nodeVersion 24.x (conflict)."},
-      "deployment": {"disposition":"unknown","authority":"UNRESOLVED: Vercel list_projects repoUrl=https://github.com/qt314wink/svg-filter-lab (team melodicbloom, 2026-10-26) returns TWO linked projects: svg-filter-lab-yodd (prj_ySihQ8ppJvUuuKEMjoaB4WYKOt5a) and svg-filter-lab (prj_mTECd1GEjjh3uBleE9m0s8Sagjlw). Neither is proven canonical.","vercel_project_id":"prj_ySihQ8ppJvUuuKEMjoaB4WYKOt5a","vercel_project_name":"svg-filter-lab-yodd"},
+      "deployment": {"disposition":"unknown","authority":"UNRESOLVED (decision #4): Vercel list_projects repoUrl filter (team melodicbloom, 2026-10-26) returns two repo-linked, preview-only projects with no production deployment: svg-filter-lab-yodd (prj_ySihQ8ppJvUuuKEMjoaB4WYKOt5a) and svg-filter-lab (prj_mTECd1GEjjh3uBleE9m0s8Sagjlw). Neither is canonical; vercel_project_id records an observed link, not authority.","vercel_project_id":"prj_ySihQ8ppJvUuuKEMjoaB4WYKOt5a","vercel_project_name":"svg-filter-lab-yodd"},
       "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"none","notes":"Visual lab should not receive delegated GitHub authority."},
       "relationships": [{"type":"deployment-sibling","target":"vercel:svg-filter-lab-yodd"},{"type":"deployment-sibling","target":"vercel:svg-filter-lab"}],
       "documentation": "README.md",
       "upstream_sync": "Resolve deployment-name duplication before declaring Vercel authority.",
-      "uncertainties": ["Vercel project name does not match canonical repository name.","Vercel project name does not match canonical repository name.","2026-10-26: both projects created 2026-06-25 ~09:4x EDT (svg-filter-lab first), both latest deployments READY with target=null and no production deployment observed; svg-filter-lab domains include svg-filter-lab-green.vercel.app, -yodd has svg-filter-lab-yodd.vercel.app. Linkage proven for both, canonical authority not provable -> disposition unknown; human decision #4.","2026-10-26: engines node 22.x vs Vercel nodeVersion 24.x conflict."],
+      "uncertainties": ["Vercel project name does not match canonical repository name.","2026-10-26: both projects created 2026-06-25 ~09:4x EDT (svg-filter-lab first), both latest deployments READY with target=null and no production deployment observed; svg-filter-lab domains include svg-filter-lab-green.vercel.app, -yodd has svg-filter-lab-yodd.vercel.app. Linkage proven for both, canonical authority not provable -> disposition unknown; see decision #4.","2026-10-26: engines node 22.x vs Vercel nodeVersion 24.x conflict.","2026-10-26 decision (PR #14 issuecomment-6425652920) #4: authority stays unknown; resolve later with explicit owner/domain/production-deployment decision."],
       "provenance": {"repository_url":"https://github.com/qt314wink/svg-filter-lab","commit_url":"https://github.com/qt314wink/svg-filter-lab/commit/951f95f974687ee03b574b95a5b96920c39c8172","observed_at":"2026-10-26"}
     },
     {

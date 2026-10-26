@@ -67,6 +67,14 @@ if (registry) {
       if (!record?.runtime_access) fail("runtime-access", `${id}: runtime_access is required`);
       if (!record?.provenance || !hasString(record.provenance.commit_url)) fail("provenance", `${id}: commit provenance is required`);
 
+      if (hasString(record?.provenance?.commit_url) && hasString(record?.full_name) && isSha(record?.observed_sha)) {
+        const expectedUrl = `https://github.com/${record.full_name}/commit/${record.observed_sha}`;
+        if (record.provenance.commit_url !== expectedUrl) fail("provenance-commit-url", `${id}: provenance.commit_url must equal ${expectedUrl}`);
+      }
+      if (hasString(record?.provenance?.repository_url) && hasString(record?.full_name) && record.provenance.repository_url !== `https://github.com/${record.full_name}`) {
+        fail("provenance-repository-url", `${id}: provenance.repository_url must equal https://github.com/${record.full_name}`);
+      }
+
       if (record?.runtime?.package_manager === "unknown") warn("package-manager-unknown", `${id}: package manager is still unknown`);
       if (record?.deployment?.disposition === "unknown") warn("deployment-unknown", `${id}: deployment disposition is still unknown`);
       if (record?.runtime_access?.vercel_connect !== "disabled" && record?.runtime_access?.github_permission_profile === "none") {
