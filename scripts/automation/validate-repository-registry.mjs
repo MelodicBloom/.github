@@ -2,9 +2,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 
 const root = process.cwd();
-const registryPath = path.join(root, "repositories", "registry.yml");
+// Optional argv[2] overrides the registry path (used by the regression fixtures).
+const registryPath = process.argv[2] ? path.resolve(root, process.argv[2]) : path.join(root, "repositories", "registry.yml");
 const schemaPath = path.join(root, "schemas", "repositories", "registry.schema.json");
 
 const errors = [];
@@ -27,6 +30,26 @@ const registry = readJson(registryPath, "registry");
 
 if (schema && schema.$schema !== "https://json-schema.org/draft/2020-12/schema") {
   fail("schema-version", "schema must declare JSON Schema draft 2020-12");
+}
+
+// Mandatory: apply the JSON Schema to the registry. Any violation is an error (exit 1).
+// If the schema itself cannot be compiled, that is also an error — never skipped.
+if (schema && registry) {
+  try {
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    addFormats(ajv);
+    const validate = ajv.compile(schema);
+    if (!validate(registry)) {
+      for (const e of validate.errors) {
+        const detail = e.params && Object.keys(e.params).length ? ` ${JSON.stringify(e.params)}` : "";
+        fail("schema", `${e.instancePath || "/"} ${e.message}${detail}`);
+      }
+    }
+  } catch (error) {
+    fail("schema-compile", `schema could not be compiled/applied: ${error.message}`);
+  }
+} else {
+  fail("schema-apply", "schema validation could not run because schema or registry failed to load");
 }
 
 if (registry) {

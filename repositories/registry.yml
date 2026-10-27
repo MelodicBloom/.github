@@ -14,7 +14,7 @@
       "owner": "MelodicBloom",
       "default_branch": "main",
       "observed_sha": "957198fb890ad424af8dea469873e903a886fd48",
-      "runtime": {"kind":"documentation","package_manager":"none","lockfile":null,"contract":"Organization automation control plane; phase-1 registry validator uses Node standard library only."},
+      "runtime": {"kind":"documentation","package_manager":"none","lockfile":null,"contract":"Organization automation control plane; phase-1 registry validator applies the JSON Schema via Ajv (npm devDependency) plus hand-written checks."},
       "deployment": {"disposition":"none","authority":"GitHub repository and reusable Actions; no Vercel product runtime required.","vercel_project_id":null,"vercel_project_name":null},
       "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"none","notes":"This repository defines policy; it should not need delegated runtime GitHub credentials."},
       "relationships": [],
