@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://melodicbloom.dev/schemas/intelligence/ecosystem-recommendation.schema.json",
   "title": "Ecosystem Evidence Review",
+  "description": "Documentation schema for the strict structured-output contract enforced by scripts/automation/openai-evidence-review.mjs. Keep both definitions synchronized; this schema is intentionally explicit so downstream consumers do not treat unconstrained arrays as authoritative.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -18,19 +19,231 @@
     "human_approval_required"
   ],
   "properties": {
-    "schema_version": { "type": "integer", "enum": [1] },
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
     "mode": {
       "type": "string",
-      "enum": ["health", "product", "conversion", "affiliate", "ads", "creative", "integration", "design_system"]
+      "enum": [
+        "health",
+        "product",
+        "conversion",
+        "affiliate",
+        "ads",
+        "creative",
+        "integration",
+        "design_system"
+      ]
     },
-    "repository": { "type": "string", "minLength": 3 },
-    "executive_summary": { "type": "string", "minLength": 1 },
-    "findings": { "type": "array" },
-    "opportunities": { "type": "array" },
-    "contradictions": { "type": "array", "items": { "type": "string" } },
-    "unknowns": { "type": "array", "items": { "type": "string" } },
-    "rejected_options": { "type": "array", "items": { "type": "string" } },
-    "recommended_sequence": { "type": "array", "items": { "type": "string" } },
-    "human_approval_required": { "type": "boolean" }
+    "repository": {
+      "type": "string",
+      "minLength": 3
+    },
+    "executive_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "category",
+          "severity",
+          "confidence",
+          "evidence_refs",
+          "observation",
+          "interpretation",
+          "recommended_action",
+          "allowed_paths",
+          "forbidden_paths",
+          "verification",
+          "dependencies",
+          "risk",
+          "rollback"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "opportunity"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "observation": {
+            "type": "string"
+          },
+          "interpretation": {
+            "type": "string"
+          },
+          "recommended_action": {
+            "type": "string"
+          },
+          "allowed_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "forbidden_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verification": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "risk": {
+            "type": "string"
+          },
+          "rollback": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "opportunities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "class",
+          "thesis",
+          "target_audience",
+          "evidence_refs",
+          "value_exchange",
+          "implementation_slice",
+          "measurement",
+          "compliance",
+          "guardrails",
+          "next_gate"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "product",
+              "conversion",
+              "affiliate",
+              "ads",
+              "generative_media",
+              "integration",
+              "design_system",
+              "platform"
+            ]
+          },
+          "thesis": {
+            "type": "string"
+          },
+          "target_audience": {
+            "type": "string"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "value_exchange": {
+            "type": "string"
+          },
+          "implementation_slice": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "measurement": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "compliance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guardrails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "next_gate": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rejected_options": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommended_sequence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "human_approval_required": {
+      "type": "boolean",
+      "const": true
+    }
   }
 }
