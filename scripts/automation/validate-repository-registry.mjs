@@ -2,9 +2,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 
 const root = process.cwd();
-const registryPath = path.join(root, "repositories", "registry.yml");
+// Optional argv[2] overrides the registry path (used by the regression fixtures).
+const registryPath = process.argv[2] ? path.resolve(root, process.argv[2]) : path.join(root, "repositories", "registry.yml");
 const schemaPath = path.join(root, "schemas", "repositories", "registry.schema.json");
 
 const errors = [];
@@ -27,6 +30,26 @@ const registry = readJson(registryPath, "registry");
 
 if (schema && schema.$schema !== "https://json-schema.org/draft/2020-12/schema") {
   fail("schema-version", "schema must declare JSON Schema draft 2020-12");
+}
+
+// Mandatory: apply the JSON Schema to the registry. Any violation is an error (exit 1).
+// If the schema itself cannot be compiled, that is also an error — never skipped.
+if (schema && registry) {
+  try {
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    addFormats(ajv);
+    const validate = ajv.compile(schema);
+    if (!validate(registry)) {
+      for (const e of validate.errors) {
+        const detail = e.params && Object.keys(e.params).length ? ` ${JSON.stringify(e.params)}` : "";
+        fail("schema", `${e.instancePath || "/"} ${e.message}${detail}`);
+      }
+    }
+  } catch (error) {
+    fail("schema-compile", `schema could not be compiled/applied: ${error.message}`);
+  }
+} else {
+  fail("schema-apply", "schema validation could not run because schema or registry failed to load");
 }
 
 if (registry) {
@@ -93,6 +116,33 @@ if (registry) {
       for (const uncertainty of record?.uncertainties ?? []) {
         if (!hasString(uncertainty)) fail("uncertainty", `${id}: uncertainty entries must be non-empty strings`);
       }
+    }
+
+    // REG-AUTH-02/04: bounded-domain authority facets and exclusive-claim conflicts.
+    const EXCLUSIVE_ROLES = new Set(["canonical", "candidate_canonical"]);
+    const claims = new Map();
+    for (const record of registry.repositories) {
+      const id = record?.full_name ?? "<missing>";
+      const domains = new Set();
+      for (const facet of record?.authority_facets ?? []) {
+        if (domains.has(facet?.domain)) fail("authority-duplicate-facet", `${id}: domain ${facet.domain} declared more than once`);
+        domains.add(facet?.domain);
+        if (facet?.role === "canonical" && facet?.confidence === "unresolved") {
+          fail("authority-unresolved-canonical", `${id}: role canonical cannot have confidence unresolved for ${facet.domain}; use candidate_canonical`);
+        }
+        if (record?.lifecycle === "archived") continue;
+        if (!EXCLUSIVE_ROLES.has(facet?.role) || facet?.exclusive === false) continue;
+        if (!claims.has(facet.domain)) claims.set(facet.domain, []);
+        claims.get(facet.domain).push(`${id} (${facet.role})`);
+      }
+      for (const proposal of record?.relationship_proposals ?? []) {
+        if (proposal?.evidence_status !== "pending_review") {
+          warn("relationship-proposal-unproven", `${id}: proposal ${proposal.candidate_interpretation} -> ${proposal.target} is not a graph edge (evidence ${proposal.evidence_status})`);
+        }
+      }
+    }
+    for (const [domain, holders] of claims) {
+      if (holders.length > 1) fail("authority-conflict", `domain ${domain} has multiple exclusive authority claims among active repositories: ${holders.join(", ")}`);
     }
 
     const missing = expected.filter(name => !seen.has(name));

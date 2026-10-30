@@ -4,24 +4,50 @@
   "title": "MelodicBloom Canonical Repository Registry",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "observed_at", "control_plane", "repositories"],
+  "required": [
+    "version",
+    "observed_at",
+    "control_plane",
+    "repositories"
+  ],
   "properties": {
-    "version": { "type": "string", "const": "1.0.0" },
-    "observed_at": { "type": "string", "format": "date" },
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date"
+    },
     "control_plane": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "baseline_sha", "branch"],
+      "required": [
+        "repository",
+        "baseline_sha",
+        "branch"
+      ],
       "properties": {
-        "repository": { "type": "string", "const": "MelodicBloom/.github" },
-        "baseline_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-        "branch": { "type": "string", "minLength": 1 }
+        "repository": {
+          "type": "string",
+          "const": "MelodicBloom/.github"
+        },
+        "baseline_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "repositories": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/repositoryRecord" }
+      "items": {
+        "$ref": "#/$defs/repositoryRecord"
+      }
     }
   },
   "$defs": {
@@ -29,56 +55,172 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "full_name", "canonical_status", "lifecycle", "owner",
-        "default_branch", "observed_sha", "runtime", "deployment",
-        "runtime_access", "relationships", "documentation",
-        "upstream_sync", "uncertainties", "provenance"
+        "full_name",
+        "canonical_status",
+        "lifecycle",
+        "owner",
+        "default_branch",
+        "observed_sha",
+        "runtime",
+        "deployment",
+        "runtime_access",
+        "relationships",
+        "documentation",
+        "upstream_sync",
+        "uncertainties",
+        "provenance"
       ],
       "properties": {
-        "full_name": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+        "full_name": {
+          "type": "string",
+          "pattern": "^[^/]+/[^/]+$"
+        },
         "canonical_status": {
-          "enum": ["canonical", "candidate", "reference", "mirror", "superseded", "unknown"]
+          "enum": [
+            "canonical",
+            "candidate",
+            "reference",
+            "mirror",
+            "superseded",
+            "unknown"
+          ]
         },
         "lifecycle": {
-          "enum": ["governance", "experimental", "candidate", "production", "reference", "archived", "unknown"]
+          "enum": [
+            "governance",
+            "experimental",
+            "candidate",
+            "production",
+            "reference",
+            "archived",
+            "unknown"
+          ]
         },
-        "owner": { "type": "string", "minLength": 1 },
-        "default_branch": { "type": "string", "minLength": 1 },
-        "observed_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "default_branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
         "runtime": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind", "package_manager", "lockfile", "contract"],
+          "required": [
+            "kind",
+            "package_manager",
+            "lockfile",
+            "contract"
+          ],
           "properties": {
-            "kind": { "enum": ["node", "python", "static", "mixed", "documentation", "unknown"] },
-            "package_manager": { "enum": ["npm", "pnpm", "yarn", "bun", "pip", "uv", "poetry", "none", "unknown"] },
-            "lockfile": { "type": ["string", "null"] },
-            "contract": { "type": "string", "minLength": 1 }
+            "kind": {
+              "enum": [
+                "node",
+                "python",
+                "static",
+                "mixed",
+                "documentation",
+                "unknown"
+              ]
+            },
+            "package_manager": {
+              "enum": [
+                "npm",
+                "pnpm",
+                "yarn",
+                "bun",
+                "pip",
+                "uv",
+                "poetry",
+                "none",
+                "unknown"
+              ]
+            },
+            "lockfile": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "contract": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         },
         "deployment": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["disposition", "authority", "vercel_project_id", "vercel_project_name"],
+          "required": [
+            "disposition",
+            "authority",
+            "vercel_project_id",
+            "vercel_project_name"
+          ],
           "properties": {
             "disposition": {
-              "enum": ["none", "vercel-production", "vercel-preview-only", "vercel-auxiliary", "external", "local-runner", "unknown"]
+              "enum": [
+                "none",
+                "vercel-production",
+                "vercel-preview-only",
+                "vercel-auxiliary",
+                "external",
+                "local-runner",
+                "unknown"
+              ]
             },
-            "authority": { "type": "string", "minLength": 1 },
-            "vercel_project_id": { "type": ["string", "null"] },
-            "vercel_project_name": { "type": ["string", "null"] }
+            "authority": {
+              "type": "string",
+              "minLength": 1
+            },
+            "vercel_project_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "vercel_project_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         },
         "runtime_access": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["vercel_connect", "github_permission_profile", "notes"],
+          "required": [
+            "vercel_connect",
+            "github_permission_profile",
+            "notes"
+          ],
           "properties": {
-            "vercel_connect": { "enum": ["disabled", "candidate", "required", "unknown"] },
-            "github_permission_profile": {
-              "enum": ["none", "read-only", "review-agent", "bounded-branch-writer", "unknown"]
+            "vercel_connect": {
+              "enum": [
+                "disabled",
+                "candidate",
+                "required",
+                "unknown"
+              ]
             },
-            "notes": { "type": "string" }
+            "github_permission_profile": {
+              "enum": [
+                "none",
+                "read-only",
+                "review-agent",
+                "bounded-branch-writer",
+                "unknown"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
           }
         },
         "relationships": {
@@ -86,25 +228,196 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["type", "target"],
+            "required": [
+              "type",
+              "target"
+            ],
             "properties": {
-              "type": { "enum": ["predecessor", "successor", "mirror", "fork", "deployment-sibling", "governed-by", "related"] },
-              "target": { "type": "string", "minLength": 1 }
+              "type": {
+                "enum": [
+                  "predecessor",
+                  "successor",
+                  "mirror",
+                  "fork",
+                  "deployment-sibling",
+                  "governed-by",
+                  "related",
+                  "implements",
+                  "approximates",
+                  "visualizes",
+                  "instantiates",
+                  "consumes_schema",
+                  "exports_to",
+                  "validates_against"
+                ]
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         },
-        "documentation": { "type": "string", "minLength": 1 },
-        "upstream_sync": { "type": "string", "minLength": 1 },
-        "uncertainties": { "type": "array", "items": { "type": "string" } },
+        "documentation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upstream_sync": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uncertainties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "provenance": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["repository_url", "commit_url", "observed_at"],
+          "required": [
+            "repository_url",
+            "commit_url",
+            "observed_at"
+          ],
           "properties": {
-            "repository_url": { "type": "string", "format": "uri" },
-            "commit_url": { "type": "string", "format": "uri" },
-            "observed_at": { "type": "string", "format": "date" }
+            "repository_url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "commit_url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "observed_at": {
+              "type": "string",
+              "format": "date"
+            }
           }
+        },
+        "authority_facets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/authorityFacet"
+          }
+        },
+        "relationship_proposals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relationshipProposal"
+          }
+        }
+      }
+    },
+    "domainToken": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "authorityFacet": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "REG-AUTH-01: CANONICAL FOR <BOUNDED DOMAIN>. Optional, additive (Phase 2 vocabulary).",
+      "required": [
+        "domain",
+        "role",
+        "confidence"
+      ],
+      "properties": {
+        "domain": {
+          "$ref": "#/$defs/domainToken"
+        },
+        "role": {
+          "enum": [
+            "canonical",
+            "candidate_canonical",
+            "consumes",
+            "not_authoritative",
+            "unknown"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "confirmed",
+            "provisional",
+            "unresolved"
+          ]
+        },
+        "exclusive": {
+          "type": "boolean",
+          "description": "REG-AUTH-04: defaults to true for canonical/candidate_canonical; set false only for explicitly shared authority."
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "uniqueItems": true
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "uniqueItems": true
+        },
+        "basis": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "uniqueItems": true
+        },
+        "review_triggers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "uniqueItems": true
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "relationshipProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "REG-AUTH-03: non-edge proposal. Never treated as a graph edge.",
+      "required": [
+        "target",
+        "candidate_interpretation",
+        "evidence_status"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_interpretation": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "evidence_status": {
+          "enum": [
+            "insufficient",
+            "partial",
+            "pending_review"
+          ]
+        },
+        "required_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "uniqueItems": true
+        },
+        "notes": {
+          "type": "string"
         }
       }
     }

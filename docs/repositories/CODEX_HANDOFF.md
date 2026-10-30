@@ -93,9 +93,19 @@ Do not attach `github/cordovan-ladder` from Codex in this phase.
 
 ### WS4 — deterministic validation
 
+The validator applies `schemas/repositories/registry.schema.json` to the registry with Ajv
+(draft 2020-12, `strict`, `allErrors`, `ajv-formats`) and then runs the hand-written
+cross-record checks (owner prefix, provenance URLs, duplicates, bounded phase-1 set).
+Any schema violation is an error and exits 1. Before this change (PR #14 state) the script
+only checked the schema's `$schema` draft string and never applied the schema.
+
 Run:
 
 ```bash
+npm ci
+node scripts/automation/validate-repository-registry.mjs            # canonical registry
+node scripts/automation/validate-repository-registry.mjs <file>     # any other registry file
+node scripts/automation/test-validate-repository-registry.mjs       # negative regression test
 node scripts/automation/validate-repository-registry.mjs > /tmp/registry-a.json
 node scripts/automation/validate-repository-registry.mjs > /tmp/registry-b.json
 cmp /tmp/registry-a.json /tmp/registry-b.json
@@ -161,7 +171,7 @@ If subagents are unavailable, execute A–E serially and preserve the same separ
 
 Phase 1 is complete when:
 
-- the schema and registry parse and validate offline;
+- the registry validates offline against the JSON Schema (Ajv) and the hand-written cross-record checks (`npm ci` required for Ajv);
 - the validator is deterministic across two runs;
 - all ten records use live full-SHA provenance;
 - known duplicate/deployment relationships are explicit;
@@ -185,3 +195,14 @@ These answers authorize registry classification only. They do **not** authorize 
 ### Decision log
 
 - 2026-10-26 — Phase 1 decisions #1–#6 answered by Jennipher in PR #14 (issuecomment-6425652920); applied to `repositories/registry.yml` as classification-only updates. PR remains draft pending her ready-for-review/merge call.
+
+## Schema enforcement regression fixture
+
+`tests/fixtures/registry/invalid-schema-passes-hand-checks.json` is the canonical registry with
+schema-only defects (bad `canonical_status`/`lifecycle`/`runtime.kind` enums, an unknown
+property, a missing required `documentation`, and a non-date `observed_at`). It passes every
+hand-written check but must fail the schema; `test-validate-repository-registry.mjs` asserts this.
+
+## Phase 2 vocabulary (draft)
+
+See [BOUNDED_DELEGATION.md](BOUNDED_DELEGATION.md) for REG-AUTH-01..06: optional `authority_facets`, continuity edge types, non-edge `relationship_proposals`, the `authority-conflict` validator rule, and the five-part determination record. These are additive only: Phase 1 records and the bounded 10-repo inventory are unchanged.

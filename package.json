@@ -1,0 +1,16 @@
+{
+  "name": "melodicbloom-control-plane",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate:registry": "node scripts/automation/validate-repository-registry.mjs",
+    "test:registry": "node scripts/automation/test-validate-repository-registry.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}
