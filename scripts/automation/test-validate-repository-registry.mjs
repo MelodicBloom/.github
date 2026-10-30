@@ -24,4 +24,19 @@ for (const needle of ["/repositories/1/canonical_status", "/repositories/2/lifec
   "unreviewed_field", "documentation", "/observed_at"]) {
   check(bad.out.errors.some(e => e.message.includes(needle)), `schema error reported for ${needle}`);
 }
+
+// REG-AUTH-04: two active repos with exclusive claims on the same domain must fail.
+const conflict = run("tests/fixtures/registry/authority-conflict-exclusive-claims.json");
+check(conflict.status === 1, "exclusive-claim conflict fixture exits 1");
+check(conflict.out.errors.some(e => e.code === "authority-conflict" && e.message.includes("fixture_test_domain")), "authority-conflict reported");
+check(conflict.out.errors.every(e => e.code === "authority-conflict"), "only authority-conflict raised");
+
+// REG-AUTH-01/02/03: canonical + consumer on same domain passes; proposal is a warning, not an edge.
+const ok = run("tests/fixtures/registry/authority-canonical-plus-consumer.json");
+check(ok.status === 0 && ok.out.ok, "canonical + consumes fixture validates (exit 0)");
+check(ok.out.warnings.some(w => w.code === "relationship-proposal-unproven"), "relationship proposal surfaced as non-edge warning");
+
+// REG-AUTH-03: candidate interpretations may not be used as relationship types.
+const edge = run("tests/fixtures/registry/authority-proposal-as-edge-rejected.json");
+check(edge.status === 1 && edge.out.errors.some(e => e.code === "schema" && e.message.includes("/relationships/")), "candidate interpretation rejected as edge type");
 process.exit(failed ? 1 : 0);

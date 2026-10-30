@@ -118,6 +118,33 @@ if (registry) {
       }
     }
 
+    // REG-AUTH-02/04: bounded-domain authority facets and exclusive-claim conflicts.
+    const EXCLUSIVE_ROLES = new Set(["canonical", "candidate_canonical"]);
+    const claims = new Map();
+    for (const record of registry.repositories) {
+      const id = record?.full_name ?? "<missing>";
+      const domains = new Set();
+      for (const facet of record?.authority_facets ?? []) {
+        if (domains.has(facet?.domain)) fail("authority-duplicate-facet", `${id}: domain ${facet.domain} declared more than once`);
+        domains.add(facet?.domain);
+        if (facet?.role === "canonical" && facet?.confidence === "unresolved") {
+          fail("authority-unresolved-canonical", `${id}: role canonical cannot have confidence unresolved for ${facet.domain}; use candidate_canonical`);
+        }
+        if (record?.lifecycle === "archived") continue;
+        if (!EXCLUSIVE_ROLES.has(facet?.role) || facet?.exclusive === false) continue;
+        if (!claims.has(facet.domain)) claims.set(facet.domain, []);
+        claims.get(facet.domain).push(`${id} (${facet.role})`);
+      }
+      for (const proposal of record?.relationship_proposals ?? []) {
+        if (proposal?.evidence_status !== "pending_review") {
+          warn("relationship-proposal-unproven", `${id}: proposal ${proposal.candidate_interpretation} -> ${proposal.target} is not a graph edge (evidence ${proposal.evidence_status})`);
+        }
+      }
+    }
+    for (const [domain, holders] of claims) {
+      if (holders.length > 1) fail("authority-conflict", `domain ${domain} has multiple exclusive authority claims among active repositories: ${holders.join(", ")}`);
+    }
+
     const missing = expected.filter(name => !seen.has(name));
     const extra = [...seen].filter(name => !expected.includes(name));
     if (missing.length) fail("phase1-missing", `phase-1 records missing: ${missing.join(", ")}`);
