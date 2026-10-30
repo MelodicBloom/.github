@@ -202,3 +202,7 @@ These answers authorize registry classification only. They do **not** authorize 
 schema-only defects (bad `canonical_status`/`lifecycle`/`runtime.kind` enums, an unknown
 property, a missing required `documentation`, and a non-date `observed_at`). It passes every
 hand-written check but must fail the schema; `test-validate-repository-registry.mjs` asserts this.
+
+## Phase 2 vocabulary (draft)
+
+See [BOUNDED_DELEGATION.md](BOUNDED_DELEGATION.md) for REG-AUTH-01..06: optional `authority_facets`, continuity edge types, non-edge `relationship_proposals`, the `authority-conflict` validator rule, and the five-part determination record. These are additive only: Phase 1 records and the bounded 10-repo inventory are unchanged.
