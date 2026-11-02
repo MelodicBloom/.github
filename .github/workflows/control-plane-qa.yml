@@ -12,6 +12,10 @@ on:
       - "docs/automation/**"
       - "docs/intelligence/**"
       - "docs/monetization/**"
+      - "repositories/**"
+      - "tests/fixtures/**"
+      - "package.json"
+      - "package-lock.json"
 
 permissions:
   contents: read
@@ -33,6 +37,14 @@ jobs:
 
       - name: Validate JavaScript syntax
         run: node --check scripts/automation/openai-evidence-review.mjs
+
+      - name: Install validator dependencies (Ajv)
+        run: npm ci --ignore-scripts
+
+      - name: Validate repository registry against JSON Schema (mandatory)
+        run: |
+          node scripts/automation/validate-repository-registry.mjs
+          node scripts/automation/test-validate-repository-registry.mjs
 
       - name: Validate JSON schemas
         run: |
