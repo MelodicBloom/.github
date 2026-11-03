@@ -12,6 +12,7 @@ const schemaPath = path.join(root, "schemas", "repositories", "registry.schema.j
 
 const errors = [];
 const warnings = [];
+let schemaValid = false;
 
 function fail(code, message) { errors.push({ code, message }); }
 function warn(code, message) { warnings.push({ code, message }); }
@@ -39,7 +40,8 @@ if (schema && registry) {
     const ajv = new Ajv2020({ allErrors: true, strict: true });
     addFormats(ajv);
     const validate = ajv.compile(schema);
-    if (!validate(registry)) {
+    schemaValid = validate(registry);
+    if (!schemaValid) {
       for (const e of validate.errors) {
         const detail = e.params && Object.keys(e.params).length ? ` ${JSON.stringify(e.params)}` : "";
         fail("schema", `${e.instancePath || "/"} ${e.message}${detail}`);
@@ -52,7 +54,9 @@ if (schema && registry) {
   fail("schema-apply", "schema validation could not run because schema or registry failed to load");
 }
 
-if (registry) {
+// Semantic checks assume schema-valid types. Return structured schema errors
+// instead of allowing malformed input to crash the reporting process.
+if (registry && schemaValid) {
   if (registry.version !== "1.0.0") fail("version", "registry version must be 1.0.0");
   if (!registry.control_plane || !isSha(registry.control_plane.baseline_sha)) {
     fail("baseline", "control_plane.baseline_sha must be a 40-character lowercase SHA");
@@ -116,6 +120,36 @@ if (registry) {
       for (const uncertainty of record?.uncertainties ?? []) {
         if (!hasString(uncertainty)) fail("uncertainty", `${id}: uncertainty entries must be non-empty strings`);
       }
+    }
+
+    // REG-AUTH-02/04: bounded-domain authority facets and exclusive-claim conflicts.
+    const EXCLUSIVE_ROLES = new Set(["canonical", "candidate_canonical"]);
+    const claims = new Map();
+    for (const record of registry.repositories) {
+      const id = record?.full_name ?? "<missing>";
+      const domains = new Set();
+      const exclusiveDomains = new Set();
+      for (const facet of record?.authority_facets ?? []) {
+        if (domains.has(facet?.domain)) fail("authority-duplicate-facet", `${id}: domain ${facet.domain} declared more than once`);
+        domains.add(facet?.domain);
+        if (facet?.role === "canonical" && facet?.confidence === "unresolved") {
+          fail("authority-unresolved-canonical", `${id}: role canonical cannot have confidence unresolved for ${facet.domain}; use candidate_canonical`);
+        }
+        if (record?.lifecycle === "archived") continue;
+        if (!EXCLUSIVE_ROLES.has(facet?.role) || facet?.exclusive === false) continue;
+        // One repository may make at most one conflict claim per domain, even
+        // when its malformed facets repeat the same exclusive claim.
+        if (exclusiveDomains.has(facet.domain)) continue;
+        exclusiveDomains.add(facet.domain);
+        if (!claims.has(facet.domain)) claims.set(facet.domain, []);
+        claims.get(facet.domain).push(`${id} (${facet.role})`);
+      }
+      for (const proposal of record?.relationship_proposals ?? []) {
+        warn("relationship-proposal-unproven", `${id}: proposal ${proposal.candidate_interpretation} -> ${proposal.target} is not a graph edge (evidence ${proposal.evidence_status})`);
+      }
+    }
+    for (const [domain, holders] of claims) {
+      if (holders.length > 1) fail("authority-conflict", `domain ${domain} has multiple exclusive authority claims among active repositories: ${holders.join(", ")}`);
     }
 
     const missing = expected.filter(name => !seen.has(name));
