@@ -36,7 +36,7 @@ Exactly these ten repositories:
 3. `MelodicBloom/aether`
 4. `MelodicBloom/chromaflora-prime`
 5. `MelodicBloom/nacre-orchid`
-6. `qt314wink/seed-loom`
+6. `MelodicBloom/seed-loom` (formerly `qt314wink/seed-loom`; GitHub repository ID `1295858033`)
 7. `qt314wink/observation-ad-pipeline`
 8. `qt314wink/nextjs-boilerplate`
 9. `qt314wink/svg-filter-lab`
