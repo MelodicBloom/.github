@@ -140,9 +140,7 @@ if (registry && schemaValid) {
         claims.get(facet.domain).push(`${id} (${facet.role})`);
       }
       for (const proposal of record?.relationship_proposals ?? []) {
-        if (proposal?.evidence_status !== "pending_review") {
-          warn("relationship-proposal-unproven", `${id}: proposal ${proposal.candidate_interpretation} -> ${proposal.target} is not a graph edge (evidence ${proposal.evidence_status})`);
-        }
+        warn("relationship-proposal-unproven", `${id}: proposal ${proposal.candidate_interpretation} -> ${proposal.target} is not a graph edge (evidence ${proposal.evidence_status})`);
       }
     }
     for (const [domain, holders] of claims) {

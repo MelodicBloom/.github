@@ -46,6 +46,15 @@ check(edge.status === 1 && edge.out.errors.some(e => e.code === "schema" && e.me
 // Schema-invalid values must still produce parseable JSON, not an uncaught exception.
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "registry-invalid-"));
 try {
+  for (const status of ["insufficient", "partial", "pending_review"]) {
+    const registry = JSON.parse(fs.readFileSync("tests/fixtures/registry/authority-canonical-plus-consumer.json", "utf8"));
+    const record = registry.repositories.find(r => r.relationship_proposals?.length);
+    record.relationship_proposals[0].evidence_status = status;
+    const file = path.join(tempDir, `proposal-${status}.json`);
+    fs.writeFileSync(file, JSON.stringify(registry));
+    const result = run(file);
+    check(result.status === 0 && result.out.warnings.some(w => w.code === "relationship-proposal-unproven" && w.message.includes(status)), `${status} proposal is surfaced as a non-edge warning`);
+  }
   for (const [name, field, value] of [["facet-object", "authority_facets", {}], ["null-proposal", "relationship_proposals", [null]]]) {
     const registry = JSON.parse(fs.readFileSync("repositories/registry.yml", "utf8"));
     registry.repositories[0][field] = value;
