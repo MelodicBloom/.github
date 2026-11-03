@@ -19,6 +19,7 @@ cat > "$tmp/bin/npm" <<'SH'
 set -euo pipefail
 [[ "$1" = ci ]]
 [[ " $* " = *' --include=dev '* && " $* " = *' --ignore-scripts '* ]]
+if [[ "${BOOTSTRAP_TEST_FAIL:-0}" = 1 ]]; then mkdir -p node_modules; printf 'partial install\n' > node_modules/partial.txt; exit 42; fi
 if [[ ! -d node_modules ]]; then mkdir node_modules; cp -a "$BOOTSTRAP_TEST_DEPS/." node_modules/; fi
 printf 'npm ci invoked\n' >> "$BOOTSTRAP_TEST_LOG"
 SH
@@ -30,8 +31,17 @@ printf 'preserve local dependency edits\n' > "$tmp/checkout/node_modules/local-e
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
 [[ "$(wc -l < "$tmp/npm.log")" = 2 ]]
 shopt -s nullglob
-backups=("$tmp"/checkout.node_modules-backup.*/node_modules/local-edit.txt)
+backups=("$tmp"/checkout/.git/registry-bootstrap-backup.*/node_modules/local-edit.txt)
 [[ ${#backups[@]} = 1 && "$(cat "${backups[0]}")" = 'preserve local dependency edits' ]]
+shopt -u nullglob
+printf 'restore after failure\n' > "$tmp/checkout/node_modules/restore-me.txt"
+if BOOTSTRAP_TEST_FAIL=1 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
+  echo 'failed install was accepted' >&2; exit 1
+fi
+[[ "$(cat "$tmp/checkout/node_modules/restore-me.txt")" = 'restore after failure' ]]
+shopt -s nullglob
+partial=("$tmp"/checkout/.git/registry-bootstrap-backup.*/failed-install-node_modules/partial.txt)
+[[ ${#partial[@]} = 1 && "$(cat "${partial[0]}")" = 'partial install' ]]
 shopt -u nullglob
 printf 'new remote content\n' > "$tmp/source/updated.txt"
 git -C "$tmp/source" add updated.txt
@@ -73,6 +83,18 @@ fi
 [[ "$(cat "$tmp/checkout/untracked-local.txt")" = 'preserve me' ]]
 rm "$tmp/checkout/untracked-local.txt"
 git -C "$tmp/checkout" config --unset status.showUntrackedFiles
+mkdir "$tmp/restricted"
+bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/restricted/checkout" >/dev/null
+printf 'parent is read only\n' > "$tmp/restricted/checkout/node_modules/local-edit.txt"
+chmod u-w "$tmp/restricted"
+if ! bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/restricted/checkout" >/dev/null 2>&1; then
+  chmod u+w "$tmp/restricted"; echo 'writable checkout under read-only parent failed' >&2; exit 1
+fi
+chmod u+w "$tmp/restricted"
+shopt -s nullglob
+restricted=("$tmp"/restricted/checkout/.git/registry-bootstrap-backup.*/node_modules/local-edit.txt)
+[[ ${#restricted[@]} = 1 && "$(cat "${restricted[0]}")" = 'parent is read only' ]]
+shopt -u nullglob
 git -C "$tmp/checkout" remote set-url origin "$tmp/other.git"
 if bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
   echo 'mismatched origin was accepted' >&2; exit 1
