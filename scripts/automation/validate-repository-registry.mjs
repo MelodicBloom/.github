@@ -128,6 +128,7 @@ if (registry && schemaValid) {
     for (const record of registry.repositories) {
       const id = record?.full_name ?? "<missing>";
       const domains = new Set();
+      const exclusiveDomains = new Set();
       for (const facet of record?.authority_facets ?? []) {
         if (domains.has(facet?.domain)) fail("authority-duplicate-facet", `${id}: domain ${facet.domain} declared more than once`);
         domains.add(facet?.domain);
@@ -136,6 +137,10 @@ if (registry && schemaValid) {
         }
         if (record?.lifecycle === "archived") continue;
         if (!EXCLUSIVE_ROLES.has(facet?.role) || facet?.exclusive === false) continue;
+        // One repository may make at most one conflict claim per domain, even
+        // when its malformed facets repeat the same exclusive claim.
+        if (exclusiveDomains.has(facet.domain)) continue;
+        exclusiveDomains.add(facet.domain);
         if (!claims.has(facet.domain)) claims.set(facet.domain, []);
         claims.get(facet.domain).push(`${id} (${facet.role})`);
       }

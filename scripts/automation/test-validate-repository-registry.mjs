@@ -46,6 +46,25 @@ check(edge.status === 1 && edge.out.errors.some(e => e.code === "schema" && e.me
 // Schema-invalid values must still produce parseable JSON, not an uncaught exception.
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "registry-invalid-"));
 try {
+  {
+    const registry = JSON.parse(fs.readFileSync("tests/fixtures/registry/authority-canonical-plus-consumer.json", "utf8"));
+    const owner = registry.repositories.find(r => r.full_name === "MelodicBloom/aether");
+    const other = registry.repositories.find(r => r.full_name === "MelodicBloom/nacre-orchid");
+    owner.authority_facets.push({ ...owner.authority_facets[0] });
+    const file = path.join(tempDir, "duplicate-facets.json");
+    fs.writeFileSync(file, JSON.stringify(registry));
+    let result = run(file);
+    check(result.status === 1 && result.out.errors.some(e => e.code === "authority-duplicate-facet") && !result.out.errors.some(e => e.code === "authority-conflict"), "duplicate claims by one repository do not create a false conflict");
+    owner.authority_facets[0].role = "consumes";
+    other.authority_facets[0].role = "canonical";
+    fs.writeFileSync(file, JSON.stringify(registry));
+    result = run(file);
+    check(result.out.errors.some(e => e.code === "authority-conflict"), "later exclusive facet still conflicts with another repository");
+    owner.authority_facets[1].confidence = "unresolved";
+    fs.writeFileSync(file, JSON.stringify(registry));
+    result = run(file);
+    check(result.out.errors.some(e => e.code === "authority-unresolved-canonical"), "duplicate facets still receive canonical confidence checks");
+  }
   for (const status of ["insufficient", "partial", "pending_review"]) {
     const registry = JSON.parse(fs.readFileSync("tests/fixtures/registry/authority-canonical-plus-consumer.json", "utf8"));
     const record = registry.repositories.find(r => r.relationship_proposals?.length);
