@@ -13,8 +13,10 @@ on:
       - "docs/automation/**"
       - "docs/intelligence/**"
       - "docs/monetization/**"
+      - "docs/repositories/**"
       - "repositories/**"
       - "tests/fixtures/**"
+      - "tests/bootstrap-registry-validator.test.sh"
       - "package.json"
       - "package-lock.json"
 
@@ -39,13 +41,19 @@ jobs:
       - name: Validate JavaScript syntax
         run: node --check scripts/automation/openai-evidence-review.mjs
 
-      - name: Install validator dependencies (Ajv)
-        run: npm ci --ignore-scripts
+      - name: Install validator dependencies even with production settings
+        env:
+          NODE_ENV: production
+          npm_config_omit: dev
+        run: npm ci --include=dev --ignore-scripts
 
       - name: Validate repository registry against JSON Schema (mandatory)
         run: |
           node scripts/automation/validate-repository-registry.mjs
           node scripts/automation/test-validate-repository-registry.mjs
+
+      - name: Test registry bootstrap safety
+        run: bash tests/bootstrap-registry-validator.test.sh
 
       - name: Validate JSON schemas
         run: |
@@ -98,3 +106,4 @@ jobs:
           include-hidden-files: true
           retention-days: 30
           if-no-files-found: error
+
