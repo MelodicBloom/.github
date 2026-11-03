@@ -2,6 +2,7 @@ name: Control Plane QA
 
 on:
   workflow_dispatch:
+  push:
   pull_request:
     branches: [main]
     paths:
@@ -68,7 +69,8 @@ jobs:
           grep -q 'store: false' scripts/automation/openai-evidence-review.mjs
           grep -q 'human_approval_required' scripts/automation/openai-evidence-review.mjs
           grep -q 'contents: read' .github/workflows/reusable-node-verify-v2.yml
-          grep -q 'if: ${{ always() }}' .github/workflows/reusable-node-verify-v2.yml
+          # Keep the literal expression out of Actions interpolation in this workflow.
+          grep -Fq 'if: $''{{ always() }}' .github/workflows/reusable-node-verify-v2.yml
 
       - name: Record QA receipt
         if: ${{ always() }}

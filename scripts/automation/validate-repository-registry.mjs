@@ -66,7 +66,7 @@ if (registry) {
       "MelodicBloom/aether",
       "MelodicBloom/chromaflora-prime",
       "MelodicBloom/nacre-orchid",
-      "qt314wink/seed-loom",
+      "MelodicBloom/seed-loom",
       "qt314wink/observation-ad-pipeline",
       "qt314wink/nextjs-boilerplate",
       "qt314wink/svg-filter-lab",

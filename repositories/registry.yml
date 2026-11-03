@@ -88,10 +88,10 @@
       "provenance": {"repository_url":"https://github.com/MelodicBloom/nacre-orchid","commit_url":"https://github.com/MelodicBloom/nacre-orchid/commit/e264e1cb86357c6f8718f0bc5cd5705ebe7209f1","observed_at":"2026-10-26"}
     },
     {
-      "full_name": "qt314wink/seed-loom",
+      "full_name": "MelodicBloom/seed-loom",
       "canonical_status": "canonical",
       "lifecycle": "production",
-      "owner": "qt314wink",
+      "owner": "MelodicBloom",
       "default_branch": "main",
       "observed_sha": "574fdbb3320c06f8fa9b19c4c2e684ee6f53b645",
       "runtime": {"kind":"mixed","package_manager":"npm","lockfile":"package-lock.json","contract":"package.json packageManager npm@10.9.2, engines node ^20.19.0 || >=22.12.0; root package-lock.json; CI mixes Node 20/22 and Python 3.11 workflows."},
@@ -99,9 +99,9 @@
       "runtime_access": {"vercel_connect":"candidate","github_permission_profile":"read-only","notes":"Phase 1 decision #2: start read-only; escalate to bounded-branch-writer only through a separate acceptance-tested branch/PR workflow; never direct-to-main. vercel_connect=candidate records classified need only; install deferred per decision #1 (no github/cordovan-ladder install for either account in Phase 1)."},
       "relationships": [{"type":"governed-by","target":"MelodicBloom/.github"}],
       "documentation": "README.md",
-      "upstream_sync": "Canonical user-owned Seed Loom repository; portfolio governance is coordinated through MelodicBloom/.github.",
+      "upstream_sync": "Canonical Seed Loom repository transferred to MelodicBloom; portfolio governance is coordinated through MelodicBloom/.github.",
       "uncertainties": ["Exact Vercel Connect installation/repository scope requires a human dashboard choice.","Exact Vercel Connect installation/repository scope requires a human dashboard choice.","2026-10-26: latest production deployment dpl_6RV9ob2hdfKbqsSs48s3yprHFQAK is CANCELED (2026-10-26 07:52 EDT); current production health not re-proven."],
-      "provenance": {"repository_url":"https://github.com/qt314wink/seed-loom","commit_url":"https://github.com/qt314wink/seed-loom/commit/574fdbb3320c06f8fa9b19c4c2e684ee6f53b645","observed_at":"2026-10-26"}
+      "provenance": {"repository_url":"https://github.com/MelodicBloom/seed-loom","commit_url":"https://github.com/MelodicBloom/seed-loom/commit/574fdbb3320c06f8fa9b19c4c2e684ee6f53b645","observed_at":"2026-10-26"}
     },
     {
       "full_name": "qt314wink/observation-ad-pipeline",

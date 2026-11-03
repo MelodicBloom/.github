@@ -207,10 +207,10 @@
       "unreviewed_field": true
     },
     {
-      "full_name": "qt314wink/seed-loom",
+      "full_name": "MelodicBloom/seed-loom",
       "canonical_status": "canonical",
       "lifecycle": "production",
-      "owner": "qt314wink",
+      "owner": "MelodicBloom",
       "default_branch": "main",
       "observed_sha": "574fdbb3320c06f8fa9b19c4c2e684ee6f53b645",
       "runtime": {
@@ -243,8 +243,8 @@
         "2026-10-26: latest production deployment dpl_6RV9ob2hdfKbqsSs48s3yprHFQAK is CANCELED (2026-10-26 07:52 EDT); current production health not re-proven."
       ],
       "provenance": {
-        "repository_url": "https://github.com/qt314wink/seed-loom",
-        "commit_url": "https://github.com/qt314wink/seed-loom/commit/574fdbb3320c06f8fa9b19c4c2e684ee6f53b645",
+        "repository_url": "https://github.com/MelodicBloom/seed-loom",
+        "commit_url": "https://github.com/MelodicBloom/seed-loom/commit/574fdbb3320c06f8fa9b19c4c2e684ee6f53b645",
         "observed_at": "2026-10-26"
       }
     },
