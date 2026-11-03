@@ -41,8 +41,11 @@ jobs:
       - name: Validate JavaScript syntax
         run: node --check scripts/automation/openai-evidence-review.mjs
 
-      - name: Install validator dependencies (Ajv)
-        run: npm ci --ignore-scripts
+      - name: Install validator dependencies even with production settings
+        env:
+          NODE_ENV: production
+          npm_config_omit: dev
+        run: npm ci --include=dev --ignore-scripts
 
       - name: Validate repository registry against JSON Schema (mandatory)
         run: |
@@ -103,3 +106,4 @@ jobs:
           include-hidden-files: true
           retention-days: 30
           if-no-files-found: error
+
