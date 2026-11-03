@@ -1,7 +1,7 @@
 # Bounded Canonical Delegation — Phase 2 Registry Vocabulary (draft)
 
 Home: [Issue #5](https://github.com/MelodicBloom/.github/issues/5) · Phase 1: [DECISION_RECORD_2026-10-26.md](DECISION_RECORD_2026-10-26.md)
-Status: **proposed vocabulary**. No new repository records are added by this change. No shader-grammar, shader-gallery, or MelodicBloom/svg-filter-lab rows are added; those come in steps 2–4.
+Status: **vocabulary merged (PR #18)**; this follow-on slice adds the first live attestation. MelodicBloom/svg-filter-lab remains deferred to the next lineage audit.
 
 ## Principle
 
@@ -95,8 +95,8 @@ REQUIRED EVIDENCE: commit ancestry, shared file history, package identity, deplo
 
 ## Known tension (open, not changed here)
 
-`qt314wink/svg-filter-lab` has flat `canonical_status: canonical` in Phase 1. Under bounded delegation, that reads as an unbounded claim, while its lineage against `MelodicBloom/svg-filter-lab` is still **UNRESOLVED** (Phase 1 decision #4 already leaves deployment authority unknown). This PR does **not** change that record. Step 2 (SVG Filter Lab lineage audit) should settle it by adding facets, or a proposal, backed by evidence.
+`qt314wink/svg-filter-lab` has flat `canonical_status: canonical` in Phase 1. Under bounded delegation, that reads as an unbounded claim, while its lineage against `MelodicBloom/svg-filter-lab` is still **UNRESOLVED** (Phase 1 decision #4 already leaves deployment authority unknown). This PR does **not** change that record. Step 3 (SVG Filter Lab lineage audit) should settle it by adding facets, or a proposal, backed by evidence.
 
 ## Sequence
 
-1. This PR: vocabulary. 2. SVG Filter Lab lineage audit. 3. Shader Grammar attestation. 4. Shader Gallery attestation. 5. Cross-system translation contract. 6. Seed Loom crosswalk. 7. Project Constellation consumption.
+1. Vocabulary (PR #18, merged). 2. **This slice:** thin live attestation — shader-grammar `canonical` for `optical_material_semantics` + shader-gallery `consumes_schema`. 3. SVG Filter Lab lineage audit → five-part determination or stay UNRESOLVED + `relationship_proposals`. 4. Gallery `canonical_for` runnable_webgl_specimens / showcase_runtime polish. 5. Cross-system translation contract. 6. Seed Loom crosswalk. 7. Project Constellation consumption.
