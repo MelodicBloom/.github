@@ -26,8 +26,13 @@ chmod +x "$tmp/bin/npm"
 export PATH="$tmp/bin:$PATH" BOOTSTRAP_TEST_DEPS="$root/node_modules" BOOTSTRAP_TEST_LOG="$tmp/npm.log"
 export REPO_URL="$tmp/remote.git" BRANCH=main
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
+printf 'preserve local dependency edits\n' > "$tmp/checkout/node_modules/local-edit.txt"
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
 [[ "$(wc -l < "$tmp/npm.log")" = 2 ]]
+shopt -s nullglob
+backups=("$tmp"/checkout.node_modules-backup.*/node_modules/local-edit.txt)
+[[ ${#backups[@]} = 1 && "$(cat "${backups[0]}")" = 'preserve local dependency edits' ]]
+shopt -u nullglob
 printf 'new remote content\n' > "$tmp/source/updated.txt"
 git -C "$tmp/source" add updated.txt
 git -C "$tmp/source" -c user.name='Bootstrap Test' -c user.email=test@example.invalid commit --quiet -m update

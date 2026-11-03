@@ -50,6 +50,14 @@ if (( NODE_MAJOR < 22 )); then
   exit 2
 fi
 
+# npm ci removes node_modules. Preserve an existing directory (or symlink),
+# including ignored local edits and links, outside the checkout before install.
+backup_dir=''
+if [[ -e node_modules || -L node_modules ]]; then
+  backup_dir="$(mktemp -d "$(pwd -P).node_modules-backup.XXXXXXXX")"
+  mv -- node_modules "$backup_dir/node_modules"
+  echo "Preserved previous node_modules at $backup_dir/node_modules" >&2
+fi
 npm ci --include=dev --ignore-scripts --no-audit --no-fund
 node scripts/automation/validate-repository-registry.mjs
 
