@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# A caller may be inside another Git checkout with repository-location variables
+# exported. Never let those variables redirect operations on WORKDIR.
+while IFS= read -r git_var; do unset "$git_var"; done < <(git rev-parse --local-env-vars)
+
 REPO_URL="${REPO_URL:-https://github.com/MelodicBloom/.github.git}"
 BRANCH="${BRANCH:-main}"
 WORKDIR="${1:-$PWD/melodicbloom-control-plane}"
@@ -59,15 +63,33 @@ if [[ -e node_modules || -L node_modules ]]; then
   mv -- node_modules "$backup_dir/node_modules"
   echo "Preserved previous node_modules at $backup_dir/node_modules" >&2
 fi
-if ! npm ci --include=dev --ignore-scripts --no-audit --no-fund; then
-  if [[ -n "$backup_dir" ]]; then
+install_pid=''
+restore_failed_install() {
+  local result=$?
+  trap - EXIT
+  if (( result != 0 )) && [[ -n "$backup_dir" ]]; then
     if [[ -e node_modules || -L node_modules ]]; then
-      mv -- node_modules "$backup_dir/failed-install-node_modules" || { echo "Could not save partial install; original remains at $backup_dir/node_modules" >&2; exit 1; }
+      mv -- node_modules "$backup_dir/failed-install-node_modules" || { echo "Could not save partial install; original remains at $backup_dir/node_modules" >&2; return; }
     fi
-    mv -- "$backup_dir/node_modules" node_modules || { echo "Could not restore dependencies; original remains at $backup_dir/node_modules" >&2; exit 1; }
+    mv -- "$backup_dir/node_modules" node_modules || { echo "Could not restore dependencies; original remains at $backup_dir/node_modules" >&2; return; }
     echo "Install failed; previous node_modules restored. Partial install retained at $backup_dir" >&2
   fi
-  exit 1
+}
+stop_install() {
+  trap - INT TERM
+  if [[ -n "$install_pid" ]]; then kill -TERM "$install_pid" 2>/dev/null || true; wait "$install_pid" 2>/dev/null || true; install_pid=''; fi
+  exit "$1"
+}
+trap restore_failed_install EXIT
+trap 'stop_install 130' INT
+trap 'stop_install 143' TERM
+npm ci --include=dev --ignore-scripts --no-audit --no-fund &
+install_pid=$!
+if wait "$install_pid"; then
+  install_pid=''
+  trap - EXIT INT TERM
+else
+  result=$?; install_pid=''; exit "$result"
 fi
 node scripts/automation/validate-repository-registry.mjs
 

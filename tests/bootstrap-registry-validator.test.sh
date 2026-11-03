@@ -20,6 +20,12 @@ set -euo pipefail
 [[ "$1" = ci ]]
 [[ " $* " = *' --include=dev '* && " $* " = *' --ignore-scripts '* ]]
 if [[ "${BOOTSTRAP_TEST_FAIL:-0}" = 1 ]]; then mkdir -p node_modules; printf 'partial install\n' > node_modules/partial.txt; exit 42; fi
+if [[ "${BOOTSTRAP_TEST_HANG:-0}" = 1 ]]; then
+  mkdir -p node_modules; printf 'interrupted install\n' > node_modules/partial.txt
+  printf 'ready\n' > "$BOOTSTRAP_TEST_READY"
+  trap 'exit 143' TERM
+  while :; do read -r -t 1 _ </dev/null || true; done
+fi
 if [[ ! -d node_modules ]]; then mkdir node_modules; cp -a "$BOOTSTRAP_TEST_DEPS/." node_modules/; fi
 printf 'npm ci invoked\n' >> "$BOOTSTRAP_TEST_LOG"
 SH
@@ -34,6 +40,17 @@ shopt -s nullglob
 backups=("$tmp"/checkout/.git/registry-bootstrap-backup.*/node_modules/local-edit.txt)
 [[ ${#backups[@]} = 1 && "$(cat "${backups[0]}")" = 'preserve local dependency edits' ]]
 shopt -u nullglob
+printf 'restore after interruption\n' > "$tmp/checkout/node_modules/interrupt-me.txt"
+BOOTSTRAP_TEST_HANG=1 BOOTSTRAP_TEST_READY="$tmp/ready" bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >"$tmp/interrupted.log" 2>&1 &
+bootstrap_pid=$!
+for _ in {1..100}; do [[ -f "$tmp/ready" ]] && break; sleep 0.05; done
+[[ -f "$tmp/ready" ]] || { kill -TERM "$bootstrap_pid" 2>/dev/null || true; wait "$bootstrap_pid" || true; echo 'install did not start' >&2; exit 1; }
+kill -TERM "$bootstrap_pid"
+if wait "$bootstrap_pid"; then echo 'interrupted install was accepted' >&2; exit 1; fi
+[[ "$(cat "$tmp/checkout/node_modules/interrupt-me.txt")" = 'restore after interruption' ]]
+source_head="$(git -C "$tmp/source" rev-parse HEAD)"
+GIT_DIR="$tmp/source/.git" GIT_WORK_TREE="$tmp/source" bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
+[[ "$(git -C "$tmp/source" rev-parse HEAD)" = "$source_head" ]]
 printf 'restore after failure\n' > "$tmp/checkout/node_modules/restore-me.txt"
 if BOOTSTRAP_TEST_FAIL=1 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
   echo 'failed install was accepted' >&2; exit 1
@@ -41,7 +58,9 @@ fi
 [[ "$(cat "$tmp/checkout/node_modules/restore-me.txt")" = 'restore after failure' ]]
 shopt -s nullglob
 partial=("$tmp"/checkout/.git/registry-bootstrap-backup.*/failed-install-node_modules/partial.txt)
-[[ ${#partial[@]} = 1 && "$(cat "${partial[0]}")" = 'partial install' ]]
+[[ ${#partial[@]} = 2 ]]
+grep -lqx 'partial install' "${partial[@]}" >/dev/null
+grep -lqx 'interrupted install' "${partial[@]}" >/dev/null
 shopt -u nullglob
 printf 'new remote content\n' > "$tmp/source/updated.txt"
 git -C "$tmp/source" add updated.txt
