@@ -21,7 +21,9 @@ else
     }
     git -C "$WORKDIR" checkout --no-overwrite-ignore "$BRANCH"
   else
-    git -C "$WORKDIR" checkout --no-overwrite-ignore -b "$BRANCH" --track "origin/$BRANCH"
+    # The original single-branch clone may not map this ref for upstream tracking.
+    # The bootstrap fetches it explicitly on every run, so do not alter origin's fetch configuration.
+    git -C "$WORKDIR" checkout --no-overwrite-ignore --no-track -b "$BRANCH" "refs/remotes/origin/$BRANCH"
   fi
   if [[ "$(git -C "$WORKDIR" rev-parse HEAD)" != "$(git -C "$WORKDIR" rev-parse "refs/remotes/origin/$BRANCH")" ]]; then
     git -C "$WORKDIR" merge-base --is-ancestor HEAD "refs/remotes/origin/$BRANCH" || {

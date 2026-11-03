@@ -41,10 +41,18 @@ git -C "$tmp/source" -c user.name='Bootstrap Test' -c user.email=test@example.in
 git -C "$tmp/source" push --quiet "$tmp/remote.git" HEAD:refs/heads/other
 printf 'preserve ignored file\n' > "$tmp/checkout/local-artifact.dat"
 printf 'local-artifact.dat\n' >> "$tmp/checkout/.git/info/exclude"
-if BRANCH=other bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
+if BRANCH=other bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >"$tmp/collision.log" 2>&1; then
   echo 'ignored local file would be overwritten' >&2; exit 1
 fi
+grep -q 'local-artifact.dat' "$tmp/collision.log"
 [[ "$(cat "$tmp/checkout/local-artifact.dat")" = 'preserve ignored file' ]]
+[[ "$(git -C "$tmp/checkout" branch --show-current)" = main ]]
+rm "$tmp/checkout/local-artifact.dat"
+BRANCH=other bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
+[[ "$(git -C "$tmp/checkout" branch --show-current)" = other ]]
+[[ "$(cat "$tmp/checkout/local-artifact.dat")" = 'tracked on other branch' ]]
+bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
+[[ "$(git -C "$tmp/checkout" branch --show-current)" = main ]]
 # A diverged target must be rejected before changing the current branch.
 divergent="$(printf 'divergent\n' | git -C "$tmp/checkout" -c user.name='Bootstrap Test' -c user.email=test@example.invalid commit-tree "$(git -C "$tmp/checkout" rev-parse 'HEAD^{tree}')" -p HEAD)"
 git -C "$tmp/checkout" update-ref refs/heads/other "$divergent"
