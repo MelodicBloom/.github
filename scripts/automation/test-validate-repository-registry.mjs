@@ -4,6 +4,9 @@
 // Before schema application was added, the validator exited 0 on it.
 import { spawnSync } from "node:child_process";
 import process from "node:process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 const script = "scripts/automation/validate-repository-registry.mjs";
 const run = (...args) => {
@@ -39,4 +42,17 @@ check(ok.out.warnings.some(w => w.code === "relationship-proposal-unproven"), "r
 // REG-AUTH-03: candidate interpretations may not be used as relationship types.
 const edge = run("tests/fixtures/registry/authority-proposal-as-edge-rejected.json");
 check(edge.status === 1 && edge.out.errors.some(e => e.code === "schema" && e.message.includes("/relationships/")), "candidate interpretation rejected as edge type");
+
+// Schema-invalid values must still produce parseable JSON, not an uncaught exception.
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "registry-invalid-"));
+try {
+  for (const [name, field, value] of [["facet-object", "authority_facets", {}], ["null-proposal", "relationship_proposals", [null]]]) {
+    const registry = JSON.parse(fs.readFileSync("repositories/registry.yml", "utf8"));
+    registry.repositories[0][field] = value;
+    const file = path.join(tempDir, `${name}.json`);
+    fs.writeFileSync(file, JSON.stringify(registry));
+    const result = run(file);
+    check(result.status === 1 && !result.out.ok && result.out.errors.some(e => e.code === "schema"), `${name} produces a structured schema error`);
+  }
+} finally { fs.rmSync(tempDir, { recursive: true, force: true }); }
 process.exit(failed ? 1 : 0);

@@ -12,6 +12,7 @@ const schemaPath = path.join(root, "schemas", "repositories", "registry.schema.j
 
 const errors = [];
 const warnings = [];
+let schemaValid = false;
 
 function fail(code, message) { errors.push({ code, message }); }
 function warn(code, message) { warnings.push({ code, message }); }
@@ -39,7 +40,8 @@ if (schema && registry) {
     const ajv = new Ajv2020({ allErrors: true, strict: true });
     addFormats(ajv);
     const validate = ajv.compile(schema);
-    if (!validate(registry)) {
+    schemaValid = validate(registry);
+    if (!schemaValid) {
       for (const e of validate.errors) {
         const detail = e.params && Object.keys(e.params).length ? ` ${JSON.stringify(e.params)}` : "";
         fail("schema", `${e.instancePath || "/"} ${e.message}${detail}`);
@@ -52,7 +54,9 @@ if (schema && registry) {
   fail("schema-apply", "schema validation could not run because schema or registry failed to load");
 }
 
-if (registry) {
+// Semantic checks assume schema-valid types. Return structured schema errors
+// instead of allowing malformed input to crash the reporting process.
+if (registry && schemaValid) {
   if (registry.version !== "1.0.0") fail("version", "registry version must be 1.0.0");
   if (!registry.control_plane || !isSha(registry.control_plane.baseline_sha)) {
     fail("baseline", "control_plane.baseline_sha must be a 40-character lowercase SHA");
