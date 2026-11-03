@@ -57,17 +57,11 @@ fi
 # npm ci removes node_modules. Preserve existing local edits and links inside
 # Git metadata, which is excluded from checkout status and must be writable to fetch.
 backup_dir=''
-if [[ -e node_modules || -L node_modules ]]; then
-  git_dir="$(git rev-parse --absolute-git-dir)"
-  backup_dir="$(mktemp -d "$git_dir/registry-bootstrap-backup.XXXXXXXX")"
-  mv -- node_modules "$backup_dir/node_modules"
-  echo "Preserved previous node_modules at $backup_dir/node_modules" >&2
-fi
 install_pid=''
 restore_failed_install() {
   local result=$?
   trap - EXIT
-  if (( result != 0 )) && [[ -n "$backup_dir" ]]; then
+  if (( result != 0 )) && [[ -n "$backup_dir" ]] && [[ -e "$backup_dir/node_modules" || -L "$backup_dir/node_modules" ]]; then
     if [[ -e node_modules || -L node_modules ]]; then
       mv -- node_modules "$backup_dir/failed-install-node_modules" || { echo "Could not save partial install; original remains at $backup_dir/node_modules" >&2; return; }
     fi
@@ -83,6 +77,12 @@ stop_install() {
 trap restore_failed_install EXIT
 trap 'stop_install 130' INT
 trap 'stop_install 143' TERM
+if [[ -e node_modules || -L node_modules ]]; then
+  git_dir="$(git rev-parse --absolute-git-dir)"
+  backup_dir="$(mktemp -d "$git_dir/registry-bootstrap-backup.XXXXXXXX")"
+  mv -- node_modules "$backup_dir/node_modules"
+  echo "Preserved previous node_modules at $backup_dir/node_modules" >&2
+fi
 npm ci --include=dev --ignore-scripts --no-audit --no-fund &
 install_pid=$!
 if wait "$install_pid"; then
