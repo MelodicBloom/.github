@@ -27,6 +27,12 @@ export REPO_URL="$tmp/remote.git" BRANCH=main
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
 [[ "$(wc -l < "$tmp/npm.log")" = 2 ]]
+printf 'new remote content\n' > "$tmp/source/updated.txt"
+git -C "$tmp/source" add updated.txt
+git -C "$tmp/source" -c user.name='Bootstrap Test' -c user.email=test@example.invalid commit --quiet -m update
+git -C "$tmp/source" push --quiet "$tmp/remote.git" HEAD:refs/heads/main
+bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
+[[ "$(cat "$tmp/checkout/updated.txt")" = 'new remote content' ]]
 git -C "$tmp/source" checkout --quiet -b other
 printf 'tracked on other branch\n' > "$tmp/source/local-artifact.dat"
 git -C "$tmp/source" add local-artifact.dat

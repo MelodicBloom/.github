@@ -20,9 +20,12 @@ else
   else
     git -C "$WORKDIR" checkout --no-overwrite-ignore -b "$BRANCH" --track "origin/$BRANCH"
   fi
-  [[ "$(git -C "$WORKDIR" rev-parse HEAD)" = "$(git -C "$WORKDIR" rev-parse "refs/remotes/origin/$BRANCH")" ]] || {
-    echo "Local branch differs from origin/$BRANCH; reconcile it explicitly before validation." >&2; exit 2;
-  }
+  if [[ "$(git -C "$WORKDIR" rev-parse HEAD)" != "$(git -C "$WORKDIR" rev-parse "refs/remotes/origin/$BRANCH")" ]]; then
+    git -C "$WORKDIR" merge-base --is-ancestor HEAD "refs/remotes/origin/$BRANCH" || {
+      echo "Local branch is ahead of or diverged from origin/$BRANCH; reconcile explicitly." >&2; exit 2;
+    }
+    git -C "$WORKDIR" merge --ff-only --no-overwrite-ignore "refs/remotes/origin/$BRANCH"
+  fi
 fi
 cd "$WORKDIR"
 
