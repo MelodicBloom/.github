@@ -18,6 +18,7 @@ cat > "$tmp/bin/npm" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 [[ "$1" = ci ]]
+[[ " $* " = *' --include=dev '* && " $* " = *' --ignore-scripts '* ]]
 if [[ ! -d node_modules ]]; then mkdir node_modules; cp -a "$BOOTSTRAP_TEST_DEPS/." node_modules/; fi
 printf 'npm ci invoked\n' >> "$BOOTSTRAP_TEST_LOG"
 SH
@@ -44,14 +45,24 @@ if BRANCH=other bash "$root/docs/repositories/bootstrap-registry-validator.sh" "
   echo 'ignored local file would be overwritten' >&2; exit 1
 fi
 [[ "$(cat "$tmp/checkout/local-artifact.dat")" = 'preserve ignored file' ]]
+# A diverged target must be rejected before changing the current branch.
+divergent="$(printf 'divergent\n' | git -C "$tmp/checkout" -c user.name='Bootstrap Test' -c user.email=test@example.invalid commit-tree "$(git -C "$tmp/checkout" rev-parse 'HEAD^{tree}')" -p HEAD)"
+git -C "$tmp/checkout" update-ref refs/heads/other "$divergent"
+if BRANCH=other bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
+  echo 'diverged branch was accepted' >&2; exit 1
+fi
+[[ "$(git -C "$tmp/checkout" branch --show-current)" = main ]]
 printf 'preserve me\n' > "$tmp/checkout/untracked-local.txt"
+git -C "$tmp/checkout" config status.showUntrackedFiles no
 if bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
   echo 'dirty checkout was accepted' >&2; exit 1
 fi
 [[ "$(cat "$tmp/checkout/untracked-local.txt")" = 'preserve me' ]]
 rm "$tmp/checkout/untracked-local.txt"
+git -C "$tmp/checkout" config --unset status.showUntrackedFiles
 git -C "$tmp/checkout" remote set-url origin "$tmp/other.git"
 if bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
   echo 'mismatched origin was accepted' >&2; exit 1
 fi
 echo 'PASS: clean clone and reuse; dirty checkout and wrong origin fail closed'
+

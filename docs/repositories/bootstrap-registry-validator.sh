@@ -13,9 +13,12 @@ else
   root="$(git -C "$WORKDIR" rev-parse --show-toplevel 2>/dev/null)" || { echo "Workdir is not a Git checkout." >&2; exit 2; }
   [[ "$(cd "$root" && pwd -P)" = "$(cd "$WORKDIR" && pwd -P)" ]] || { echo "Workdir is not a repository root." >&2; exit 2; }
   [[ "$(git -C "$WORKDIR" remote get-url origin)" = "$REPO_URL" ]] || { echo "Existing origin differs from REPO_URL; refusing to switch." >&2; exit 2; }
-  [[ -z "$(git -C "$WORKDIR" status --porcelain)" ]] || { echo "Existing checkout has changes; refusing to switch." >&2; exit 2; }
+  [[ -z "$(git -C "$WORKDIR" status --porcelain --untracked-files=all)" ]] || { echo "Existing checkout has changes; refusing to switch." >&2; exit 2; }
   git -C "$WORKDIR" fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
   if git -C "$WORKDIR" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    git -C "$WORKDIR" merge-base --is-ancestor "refs/heads/$BRANCH" "refs/remotes/origin/$BRANCH" || {
+      echo "Local branch is ahead of or diverged from origin/$BRANCH; reconcile explicitly." >&2; exit 2;
+    }
     git -C "$WORKDIR" checkout --no-overwrite-ignore "$BRANCH"
   else
     git -C "$WORKDIR" checkout --no-overwrite-ignore -b "$BRANCH" --track "origin/$BRANCH"
@@ -45,7 +48,7 @@ if (( NODE_MAJOR < 22 )); then
   exit 2
 fi
 
-npm ci --ignore-scripts --no-audit --no-fund
+npm ci --include=dev --ignore-scripts --no-audit --no-fund
 node scripts/automation/validate-repository-registry.mjs
 
 echo
@@ -53,3 +56,4 @@ echo "Environment ready:"
 echo "  repo:   $WORKDIR"
 echo "  branch: $BRANCH"
 echo "  node:   $(node --version)"
+
