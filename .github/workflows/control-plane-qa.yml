@@ -13,6 +13,7 @@ on:
       - "docs/automation/**"
       - "docs/intelligence/**"
       - "docs/monetization/**"
+      - "docs/repositories/**"
       - "repositories/**"
       - "tests/fixtures/**"
       - "package.json"
@@ -46,6 +47,9 @@ jobs:
         run: |
           node scripts/automation/validate-repository-registry.mjs
           node scripts/automation/test-validate-repository-registry.mjs
+
+      - name: Test registry bootstrap safety
+        run: bash tests/bootstrap-registry-validator.test.sh
 
       - name: Validate JSON schemas
         run: |

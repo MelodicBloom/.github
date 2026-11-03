@@ -2,21 +2,29 @@
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/MelodicBloom/.github.git}"
-BRANCH="${BRANCH:-docs/canonical-repository-registry-v1}"
+BRANCH="${BRANCH:-main}"
 WORKDIR="${1:-$PWD/melodicbloom-control-plane}"
 
-if [[ ! -d "$WORKDIR/.git" ]]; then
-  git clone "$REPO_URL" "$WORKDIR"
-fi
-
-cd "$WORKDIR"
-git fetch origin --prune
-
-if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  git checkout "$BRANCH"
+git check-ref-format --branch "$BRANCH" >/dev/null
+if [[ ! -e "$WORKDIR" ]]; then
+  git clone --branch "$BRANCH" --single-branch -- "$REPO_URL" "$WORKDIR"
 else
-  git checkout -b "$BRANCH" "origin/$BRANCH"
+  [[ -d "$WORKDIR" ]] || { echo "Workdir exists but is not a directory." >&2; exit 2; }
+  root="$(git -C "$WORKDIR" rev-parse --show-toplevel 2>/dev/null)" || { echo "Workdir is not a Git checkout." >&2; exit 2; }
+  [[ "$(cd "$root" && pwd -P)" = "$(cd "$WORKDIR" && pwd -P)" ]] || { echo "Workdir is not a repository root." >&2; exit 2; }
+  [[ "$(git -C "$WORKDIR" remote get-url origin)" = "$REPO_URL" ]] || { echo "Existing origin differs from REPO_URL; refusing to switch." >&2; exit 2; }
+  [[ -z "$(git -C "$WORKDIR" status --porcelain)" ]] || { echo "Existing checkout has changes; refusing to switch." >&2; exit 2; }
+  git -C "$WORKDIR" fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+  if git -C "$WORKDIR" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    git -C "$WORKDIR" checkout "$BRANCH"
+  else
+    git -C "$WORKDIR" checkout -b "$BRANCH" --track "origin/$BRANCH"
+  fi
+  [[ "$(git -C "$WORKDIR" rev-parse HEAD)" = "$(git -C "$WORKDIR" rev-parse "refs/remotes/origin/$BRANCH")" ]] || {
+    echo "Local branch differs from origin/$BRANCH; reconcile it explicitly before validation." >&2; exit 2;
+  }
 fi
+cd "$WORKDIR"
 
 if ! command -v node >/dev/null 2>&1; then
   if command -v nvm >/dev/null 2>&1; then
@@ -34,8 +42,7 @@ if (( NODE_MAJOR < 22 )); then
   exit 2
 fi
 
-echo "No npm dependencies are required for phase 1."
-echo "Validator uses only the Node.js standard library."
+npm ci --ignore-scripts --no-audit --no-fund
 node scripts/automation/validate-repository-registry.mjs
 
 echo
