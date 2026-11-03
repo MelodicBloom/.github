@@ -4,6 +4,9 @@
 // Before schema application was added, the validator exited 0 on it.
 import { spawnSync } from "node:child_process";
 import process from "node:process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 const script = "scripts/automation/validate-repository-registry.mjs";
 const run = (...args) => {
@@ -24,4 +27,60 @@ for (const needle of ["/repositories/1/canonical_status", "/repositories/2/lifec
   "unreviewed_field", "documentation", "/observed_at"]) {
   check(bad.out.errors.some(e => e.message.includes(needle)), `schema error reported for ${needle}`);
 }
+
+// REG-AUTH-04: two active repos with exclusive claims on the same domain must fail.
+const conflict = run("tests/fixtures/registry/authority-conflict-exclusive-claims.json");
+check(conflict.status === 1, "exclusive-claim conflict fixture exits 1");
+check(conflict.out.errors.some(e => e.code === "authority-conflict" && e.message.includes("fixture_test_domain")), "authority-conflict reported");
+check(conflict.out.errors.every(e => e.code === "authority-conflict"), "only authority-conflict raised");
+
+// REG-AUTH-01/02/03: canonical + consumer on same domain passes; proposal is a warning, not an edge.
+const ok = run("tests/fixtures/registry/authority-canonical-plus-consumer.json");
+check(ok.status === 0 && ok.out.ok, "canonical + consumes fixture validates (exit 0)");
+check(ok.out.warnings.some(w => w.code === "relationship-proposal-unproven"), "relationship proposal surfaced as non-edge warning");
+
+// REG-AUTH-03: candidate interpretations may not be used as relationship types.
+const edge = run("tests/fixtures/registry/authority-proposal-as-edge-rejected.json");
+check(edge.status === 1 && edge.out.errors.some(e => e.code === "schema" && e.message.includes("/relationships/")), "candidate interpretation rejected as edge type");
+
+// Schema-invalid values must still produce parseable JSON, not an uncaught exception.
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "registry-invalid-"));
+try {
+  {
+    const registry = JSON.parse(fs.readFileSync("tests/fixtures/registry/authority-canonical-plus-consumer.json", "utf8"));
+    const owner = registry.repositories.find(r => r.full_name === "MelodicBloom/aether");
+    const other = registry.repositories.find(r => r.full_name === "MelodicBloom/nacre-orchid");
+    owner.authority_facets.push({ ...owner.authority_facets[0] });
+    const file = path.join(tempDir, "duplicate-facets.json");
+    fs.writeFileSync(file, JSON.stringify(registry));
+    let result = run(file);
+    check(result.status === 1 && result.out.errors.some(e => e.code === "authority-duplicate-facet") && !result.out.errors.some(e => e.code === "authority-conflict"), "duplicate claims by one repository do not create a false conflict");
+    owner.authority_facets[0].role = "consumes";
+    other.authority_facets[0].role = "canonical";
+    fs.writeFileSync(file, JSON.stringify(registry));
+    result = run(file);
+    check(result.out.errors.some(e => e.code === "authority-conflict"), "later exclusive facet still conflicts with another repository");
+    owner.authority_facets[1].confidence = "unresolved";
+    fs.writeFileSync(file, JSON.stringify(registry));
+    result = run(file);
+    check(result.out.errors.some(e => e.code === "authority-unresolved-canonical"), "duplicate facets still receive canonical confidence checks");
+  }
+  for (const status of ["insufficient", "partial", "pending_review"]) {
+    const registry = JSON.parse(fs.readFileSync("tests/fixtures/registry/authority-canonical-plus-consumer.json", "utf8"));
+    const record = registry.repositories.find(r => r.relationship_proposals?.length);
+    record.relationship_proposals[0].evidence_status = status;
+    const file = path.join(tempDir, `proposal-${status}.json`);
+    fs.writeFileSync(file, JSON.stringify(registry));
+    const result = run(file);
+    check(result.status === 0 && result.out.warnings.some(w => w.code === "relationship-proposal-unproven" && w.message.includes(status)), `${status} proposal is surfaced as a non-edge warning`);
+  }
+  for (const [name, field, value] of [["facet-object", "authority_facets", {}], ["null-proposal", "relationship_proposals", [null]]]) {
+    const registry = JSON.parse(fs.readFileSync("repositories/registry.yml", "utf8"));
+    registry.repositories[0][field] = value;
+    const file = path.join(tempDir, `${name}.json`);
+    fs.writeFileSync(file, JSON.stringify(registry));
+    const result = run(file);
+    check(result.status === 1 && !result.out.ok && result.out.errors.some(e => e.code === "schema"), `${name} produces a structured schema error`);
+  }
+} finally { fs.rmSync(tempDir, { recursive: true, force: true }); }
 process.exit(failed ? 1 : 0);
