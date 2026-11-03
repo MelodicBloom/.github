@@ -4,7 +4,15 @@ root="$(git rev-parse --show-toplevel)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 git init --bare --quiet "$tmp/remote.git"
-git push --quiet "$tmp/remote.git" HEAD:refs/heads/main
+mkdir -p "$tmp/source/scripts/automation" "$tmp/source/schemas/repositories" "$tmp/source/repositories"
+cp "$root/package.json" "$root/package-lock.json" "$root/.gitignore" "$tmp/source/"
+cp "$root/scripts/automation/validate-repository-registry.mjs" "$tmp/source/scripts/automation/"
+cp "$root/schemas/repositories/registry.schema.json" "$tmp/source/schemas/repositories/"
+cp "$root/repositories/registry.yml" "$tmp/source/repositories/"
+git -C "$tmp/source" init --quiet -b main
+git -C "$tmp/source" add .
+git -C "$tmp/source" -c user.name='Bootstrap Test' -c user.email=test@example.invalid commit --quiet -m fixture
+git -C "$tmp/source" push --quiet "$tmp/remote.git" HEAD:refs/heads/main
 mkdir -p "$tmp/bin"
 cat > "$tmp/bin/npm" <<'SH'
 #!/usr/bin/env bash
