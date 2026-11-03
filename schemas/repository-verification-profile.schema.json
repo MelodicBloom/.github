@@ -8,6 +8,8 @@
   "properties": {
     "schema_version": { "const": 1 },
     "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "repository_id": { "type": "integer", "minimum": 1, "description": "Stable GitHub numeric repository id; survives transfers and renames." },
+    "former_repository_names": { "type": "array", "items": { "type": "string", "pattern": "^[^/]+/[^/]+$" }, "uniqueItems": true, "description": "Historical owner/name values (e.g. pre-transfer); preserved so historical receipts remain attributable." },
     "classification": {
       "type": "object",
       "additionalProperties": false,
