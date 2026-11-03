@@ -64,6 +64,7 @@ if (registry && schemaValid) {
   if (!Array.isArray(registry.repositories)) {
     fail("repositories", "repositories must be an array");
   } else {
+        // Phase-2 bounded set: Phase-1 ten plus shader-grammar + shader-gallery (optical_material_semantics attestation).
     const expected = [
       "MelodicBloom/.github",
       "MelodicBloom/agent-runtime-control-center",
@@ -74,7 +75,9 @@ if (registry && schemaValid) {
       "qt314wink/observation-ad-pipeline",
       "qt314wink/nextjs-boilerplate",
       "qt314wink/svg-filter-lab",
-      "qt314wink/neobrutalism-lab"
+      "qt314wink/neobrutalism-lab",
+      "MelodicBloom/shader-grammar",
+      "MelodicBloom/shader-gallery"
     ];
     const seen = new Set();
     const deploymentIds = new Map();
@@ -154,10 +157,10 @@ if (registry && schemaValid) {
 
     const missing = expected.filter(name => !seen.has(name));
     const extra = [...seen].filter(name => !expected.includes(name));
-    if (missing.length) fail("phase1-missing", `phase-1 records missing: ${missing.join(", ")}`);
-    if (extra.length) fail("phase1-extra", `phase-1 registry must remain bounded; unexpected records: ${extra.join(", ")}`);
+    if (missing.length) fail("phase1-missing", `phase-2 bounded records missing: ${missing.join(", ")}`);
+    if (extra.length) fail("phase1-extra", `phase-2 bounded registry must remain bounded; unexpected records: ${extra.join(", ")}`);
     if (registry.repositories.length !== expected.length) {
-      fail("phase1-count", `phase-1 registry must contain exactly ${expected.length} records`);
+      fail("phase1-count", `phase-2 bounded registry must contain exactly ${expected.length} records`);
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "observed_at": "2026-10-26",
+  "observed_at": "2026-11-03",
   "control_plane": {
     "repository": "MelodicBloom/.github",
     "baseline_sha": "957198fb890ad424af8dea469873e903a886fd48",
@@ -166,6 +166,86 @@
       "upstream_sync": "No upstream mirror policy asserted.",
       "uncertainties": ["2026-10-26: engines <23 vs Vercel project nodeVersion 24.x conflict."],
       "provenance": {"repository_url":"https://github.com/qt314wink/neobrutalism-lab","commit_url":"https://github.com/qt314wink/neobrutalism-lab/commit/ee133335df69ed188352a0894825c215477c5a6b","observed_at":"2026-10-26"}
+    },
+    {
+      "full_name": "MelodicBloom/shader-grammar",
+      "canonical_status": "canonical",
+      "lifecycle": "production",
+      "owner": "MelodicBloom",
+      "default_branch": "main",
+      "observed_sha": "be11bde30962773999e2c37888e044970f5673d5",
+      "runtime": {"kind":"node","package_manager":"npm","lockfile":"package-lock.json","contract":"Ontology package: root package-lock.json; npm run validate via tools/validate.mjs (Ajv); schemas/, catalog/, recipes/, taxonomy/. No engines or packageManager field in package.json."},
+      "deployment": {"disposition":"none","authority":"Schema/ontology package; no product deployment authority asserted.","vercel_project_id":null,"vercel_project_name":null},
+      "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"none","notes":"Semantic authority package; no delegated GitHub runtime credentials justified."},
+      "relationships": [{"type":"governed-by","target":"MelodicBloom/.github"}],
+      "authority_facets": [
+        {
+          "domain": "optical_material_semantics",
+          "role": "canonical",
+          "confidence": "confirmed",
+          "exclusive": true,
+          "scope": [
+            "parameter_schema",
+            "field_schema",
+            "operator_schema",
+            "recipe_schema",
+            "material_taxonomy"
+          ],
+          "exclusions": [
+            "gallery_ux",
+            "svg_filter_implementation",
+            "portfolio_routes",
+            "framework_component_api",
+            "deployment_authority"
+          ],
+          "basis": [
+            "repository_declared_purpose",
+            "validated_schema_package",
+            "cross_specimen_reuse_test"
+          ],
+          "review_triggers": [
+            "ontology_split",
+            "incompatible_schema_version",
+            "second_repo_claiming_same_authority"
+          ]
+        }
+      ],
+      "documentation": "README.md; schemas/; catalog/; recipes/; taxonomy/; docs/CONTACT-SHEET-MATERIAL-INTAKE.md",
+      "upstream_sync": "Canonical MelodicBloom transfer of former qt314wink/shader-grammar; package.json repository URL still cites qt314wink path (redirect).",
+      "uncertainties": ["2026-11-03: package.json repository.url still points at qt314wink/shader-grammar while GitHub resolves MelodicBloom/shader-grammar.","2026-11-03: no engines/packageManager field; Node contract inferred from tooling only."],
+      "provenance": {"repository_url":"https://github.com/MelodicBloom/shader-grammar","commit_url":"https://github.com/MelodicBloom/shader-grammar/commit/be11bde30962773999e2c37888e044970f5673d5","observed_at":"2026-11-03"}
+    },
+    {
+      "full_name": "MelodicBloom/shader-gallery",
+      "canonical_status": "candidate",
+      "lifecycle": "production",
+      "owner": "MelodicBloom",
+      "default_branch": "main",
+      "observed_sha": "8b73c4e3e89abedcc33fde82902eafc8f1d7e553",
+      "runtime": {"kind":"mixed","package_manager":"npm","lockfile":null,"contract":"Multi-package specimen/runtime gallery (optical-studio, packages/shader-library-v1, abalone, aurora, material-validation-lab). Nested package.json files observed (e.g. dispersion-instrument engines node>=18); no root package.json or lockfile at measured HEAD."},
+      "deployment": {"disposition":"unknown","authority":"No Vercel project mapping asserted in this slice; deployment authority left unresolved pending evidence.","vercel_project_id":null,"vercel_project_name":null},
+      "runtime_access": {"vercel_connect":"disabled","github_permission_profile":"none","notes":"Gallery/specimen runtime should not receive delegated GitHub authority for ontology ownership."},
+      "relationships": [{"type":"governed-by","target":"MelodicBloom/.github"},{"type":"consumes_schema","target":"MelodicBloom/shader-grammar"}],
+      "authority_facets": [
+        {
+          "domain": "optical_material_semantics",
+          "role": "consumes",
+          "confidence": "confirmed",
+          "exclusive": false,
+          "scope": [
+            "recipe_binding",
+            "specimen_runtime"
+          ],
+          "exclusions": [
+            "optical_ontology",
+            "competing_material_taxonomy"
+          ]
+        }
+      ],
+      "documentation": "README.md; optical-studio/; packages/; schemas/; docs/",
+      "upstream_sync": "Specimen and gallery runtime consuming MelodicBloom/shader-grammar schemas; no ontology ownership.",
+      "uncertainties": ["2026-11-03: no root package.json/lockfile; package_manager=npm inferred from nested packages only.","2026-11-03: Vercel deployment mapping not proven in this slice; disposition remains unknown.","2026-11-03: flat canonical_status=candidate while recruiter-landing PR work remains open; facets claim consumes only for optical_material_semantics."],
+      "provenance": {"repository_url":"https://github.com/MelodicBloom/shader-gallery","commit_url":"https://github.com/MelodicBloom/shader-gallery/commit/8b73c4e3e89abedcc33fde82902eafc8f1d7e553","observed_at":"2026-11-03"}
     }
   ]
 }
