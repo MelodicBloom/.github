@@ -98,9 +98,10 @@ jobs:
           const required = ['schema_version', 'repository', 'classification', 'runtime', 'commands', 'surfaces', 'promotion', 'evidence'];
           const missing = required.filter((key) => !(key in profile));
           if (missing.length) throw new Error(`Missing profile keys: ${missing.join(', ')}`);
-          if (profile.repository !== process.env.GITHUB_REPOSITORY) {
-            throw new Error(`Profile repository ${profile.repository} does not match ${process.env.GITHUB_REPOSITORY}`);
-          }
+          const idMatch = profile.repository_id !== undefined && String(profile.repository_id) === String(process.env.GITHUB_REPOSITORY_ID);
+          const formerNames = Array.isArray(profile.former_repository_names) ? profile.former_repository_names : [];
+          const nameMatch = profile.repository === process.env.GITHUB_REPOSITORY || formerNames.includes(process.env.GITHUB_REPOSITORY);
+          if (!idMatch && !nameMatch) throw new Error(`Profile identity mismatch: profile repository=${profile.repository} former_repository_names=${JSON.stringify(formerNames)} repository_id=${profile.repository_id ?? 'unset'}; runtime GITHUB_REPOSITORY=${process.env.GITHUB_REPOSITORY} GITHUB_REPOSITORY_ID=${process.env.GITHUB_REPOSITORY_ID}`);
           if (!Array.isArray(profile.promotion?.required_gates) || profile.promotion.required_gates.length === 0) {
             throw new Error('promotion.required_gates must contain at least one gate');
           }
