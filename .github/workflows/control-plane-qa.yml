@@ -16,6 +16,7 @@ on:
       - "docs/repositories/**"
       - "repositories/**"
       - "tests/fixtures/**"
+      - "tests/bootstrap-registry-validator.test.sh"
       - "package.json"
       - "package-lock.json"
 

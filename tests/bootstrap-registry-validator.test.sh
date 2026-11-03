@@ -27,6 +27,17 @@ export REPO_URL="$tmp/remote.git" BRANCH=main
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
 bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null
 [[ "$(wc -l < "$tmp/npm.log")" = 2 ]]
+git -C "$tmp/source" checkout --quiet -b other
+printf 'tracked on other branch\n' > "$tmp/source/local-artifact.dat"
+git -C "$tmp/source" add local-artifact.dat
+git -C "$tmp/source" -c user.name='Bootstrap Test' -c user.email=test@example.invalid commit --quiet -m other
+git -C "$tmp/source" push --quiet "$tmp/remote.git" HEAD:refs/heads/other
+printf 'preserve ignored file\n' > "$tmp/checkout/local-artifact.dat"
+printf 'local-artifact.dat\n' >> "$tmp/checkout/.git/info/exclude"
+if BRANCH=other bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
+  echo 'ignored local file would be overwritten' >&2; exit 1
+fi
+[[ "$(cat "$tmp/checkout/local-artifact.dat")" = 'preserve ignored file' ]]
 printf 'preserve me\n' > "$tmp/checkout/untracked-local.txt"
 if bash "$root/docs/repositories/bootstrap-registry-validator.sh" "$tmp/checkout" >/dev/null 2>&1; then
   echo 'dirty checkout was accepted' >&2; exit 1

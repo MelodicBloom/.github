@@ -16,9 +16,9 @@ else
   [[ -z "$(git -C "$WORKDIR" status --porcelain)" ]] || { echo "Existing checkout has changes; refusing to switch." >&2; exit 2; }
   git -C "$WORKDIR" fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
   if git -C "$WORKDIR" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-    git -C "$WORKDIR" checkout "$BRANCH"
+    git -C "$WORKDIR" checkout --no-overwrite-ignore "$BRANCH"
   else
-    git -C "$WORKDIR" checkout -b "$BRANCH" --track "origin/$BRANCH"
+    git -C "$WORKDIR" checkout --no-overwrite-ignore -b "$BRANCH" --track "origin/$BRANCH"
   fi
   [[ "$(git -C "$WORKDIR" rev-parse HEAD)" = "$(git -C "$WORKDIR" rev-parse "refs/remotes/origin/$BRANCH")" ]] || {
     echo "Local branch differs from origin/$BRANCH; reconcile it explicitly before validation." >&2; exit 2;
