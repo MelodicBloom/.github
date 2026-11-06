@@ -1,3 +1,17 @@
+## Featured update — full-spectrum regenerative practice (2026-11-06)
+
+Jennipher Troup / MelodicBloom connects sensory web and generative art, tactile UI token systems, civic research and governed tooling. Regenerative principles guide living-systems feedback, civic/ecological care, durable craft and preservative synthesis: retain lineage, tensions, alternatives and inspectable provenance. These are design commitments, not measured impact claims.
+
+- Sensory web: [Kaleido-Glyph](https://kaleido-glyph.grok.me), [Ripple / Wake](https://wake-liquid-simulator.vercel.app), [SVG Filter Lab](https://melodicbloom.github.io/svg-filter-lab/), [Shader Gallery](https://melodicbloom.github.io/shader-gallery/docs/).
+- Benthic: [native WebGL2/GLSL proof](https://github.com/MelodicBloom/shader-gallery/tree/codex/benthic-os-proof/benthic-os) and [R3F proof](https://github.com/MelodicBloom/shader-gallery/tree/codex/benthic-r3f-proof/benthic-r3f). Local/source evidence, not public Pages deployments.
+- Generative art / material UI: [Melodyfire](https://melodyfire.space), [Neobrutalism Lab](https://neobrutalism-lab.vercel.app), [FLORÉ](https://flore-orthography-memphis-ui.vercel.app), [Lithomemphis](https://lithomemphis.vercel.app), [Artisan Solutions Hub](https://artisan-hub-specimen.vercel.app). Artisan is a frontend specimen, not a verified live backend.
+- Civic research: [Philly Civic AI evidence ledger](https://github.com/MelodicBloom/philly-civic-ai/tree/feat/agrarian-futures-claim-ledger-v0) and [Keep It Moving concept](https://github.com/MelodicBloom/philly-civic-ai/tree/feature/keep-it-moving-philly-concept-v0). React UI built locally; no public AI service, city endorsement or adopted policy claimed.
+- Governed tooling: [Seed Loom](https://seed-loom.vercel.app). Public specimen shell and source contracts, not every pipeline outcome.
+
+The Sensory Web Blueprint and The Fractured Lens remain conceptual R&D codices, not shipping/performance receipts. Cursor frames scoped multi-agent lanes, MCP tools and review gates; people retain merge/publish authority. Current verified artifacts and proposed next slices remain separate. This dated update supersedes conflicting current-status claims below; older narrative is retained as history, not erased.
+
+---
+
 # MelodicBloom
 
 **Jennipher Troup — AI Systems Designer · Creative Technologist · Regenerative Systems Designer**  
